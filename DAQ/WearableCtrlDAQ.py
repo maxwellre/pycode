@@ -18,7 +18,7 @@ showPressure = True
 OutputVolt = 7.0
 
 '''-------------------------------------------------------------------------------'''
-dt = 1.0/Fs-0.000011 # Manual correction of PC timer
+dt = 1.0/Fs-0.000016 # Manual correction of PC timer
 readLen = int(TimeOut * Fs) # The number of samples, per channel, to read
 
 calib = np.loadtxt('Calibration20210802.txt')
