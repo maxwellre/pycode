@@ -1,13 +1,10 @@
 '''
 https://nidaqmx-python.readthedocs.io/en/latest/
-'''
-#import nidaqmx
-# with nidaqmx.Task() as task:
-#     task.ai_channels.add_ai_voltage_chan("Dev1/ai3")
-    #task.read(number_of_samples_per_channel=1000)
-'''
 PyDAQmx Info: https://www.pythonforthelab.com/blog/controlling-a-national-instruments-card-with-python/
 DAQmxCreateAIVoltageChan: https://zone.ni.com/reference/en-XX/help/370471AA-01/daqmxcfunc/daqmxcreateaivoltagechan/
+DAQmxCreateAOVoltageChan: https://pythonhosted.org/PyDAQmx/examples/analog_output.html
+
+Author: Yitian Shao (ytshao@is.mpg.de)
 '''
 import time
 import numpy as np
@@ -40,7 +37,6 @@ with nidaq.Task() as task0, nidaq.Task() as task1:
 
     task1.CreateAOVoltageChan("Dev1/ao0", None, 0, 6, nidaq.DAQmx_Val_Volts, None)
     task1.CfgSampClkTiming("", Fs, nidaq.DAQmx_Val_Rising, nidaq.DAQmx_Val_FiniteSamps, readLen)
-    # task1.WriteAnalogF64(readLen, False, TimeOut, nidaq.DAQmx_Val_GroupByChannel, daqOutput, np.float64, None)
     task1.WriteAnalogF64(numSampsPerChan=readLen, autoStart=True, timeout=TimeOut+1, dataLayout=nidaq.DAQmx_Val_GroupByChannel,
                    writeArray=daqOutput, reserved=None, sampsPerChanWritten=nidaq.byref(actualReadNum))
 
