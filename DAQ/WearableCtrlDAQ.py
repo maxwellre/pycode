@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import PyDAQmx as nidaq
 
 Fs = 1000.0 # Samples_Per_Sec = 5000
-TimeOut = 20 # The amount of time, in seconds, to wait for the function to read.
+TimeOut = 7 # The amount of time, in seconds, to wait for the function to read.
 showPressure = True
 OutputVolt = 7.0
 
@@ -103,7 +103,7 @@ plt.show()
 '''-------------------------------------------------------------------------------'''
 currentTime = time.strftime("%H-%M-%S", time.localtime())
 
-trial = 0
+trial = 5
 
-np.savetxt(("Data_Fs%d_at%s_Test_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
+np.savetxt(("Data_Fs%d_at%s_TestCamForce_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
 print("Data saved on %s" % currentTime)
