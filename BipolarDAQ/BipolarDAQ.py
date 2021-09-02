@@ -9,94 +9,98 @@ import numpy as np
 import matplotlib.pyplot as plt
 import PyDAQmx as nidaq
 
+AnalogInputNum = 2
 Fs = 1000.0 # Sampling frequency
-MeasureTime = 3 # Measurement time, in seconds. (7)
-# showPressure = True # To display in raw unit (voltage) or converted to pressure unit
+MeasureTime = 8 # Measurement time, in seconds. (7)
+showPressure = True # To display in raw unit (voltage) or converted to pressure unit
+
+# Define control signals
+HV_Off = np.zeros((1,3), dtype=np.uint8)
+HV_Charge = np.zeros((1,3), dtype=np.uint8)
+HV_Discharge = np.zeros((1,3), dtype=np.uint8)
+HV_Charge[0,1:] = 1 # DIO line1 controls Positive HV (charge line)
+HV_Discharge[0,0] = 1 # DIO line0 controls Negative HV (discharge line)
+HV_Discharge[0,2] = 1
 
 '''-------------------------------------------------------------------------------'''
-dt = 1.0/Fs#-0.000016 # Manual correction of PC timer (For the Dell labtop specifically)
-half_dt = 0.5*dt-0.0002
 readLen = int(MeasureTime * Fs) # The number of samples, per channel, to read
 
 calib = np.loadtxt('Calibration20210802.txt')
 print("Calibration line a = %.16f, b = %.16f" % (calib[0],calib[1]))
 
-# daqdata = np.zeros((readLen*2,), dtype=np.float64)
-
-IO_High = np.ones((1,), dtype=np.uint8)
-IO_Low = np.zeros((1,), dtype=np.uint8)
-
-outData = np.zeros((readLen,), dtype=np.uint8)
-outData[1000:2000] = 1
-outData[5000:6000] = 1
+daqdata = np.zeros((readLen*AnalogInputNum,), dtype=np.float64)
 
 actualReadNum = nidaq.int32()
 with nidaq.Task() as task0, nidaq.Task() as task1:
-    # task0.CreateAIVoltageChan("Dev1/ai2", None, nidaq.DAQmx_Val_Diff, -1, 4, nidaq.DAQmx_Val_Volts, None)
-    # task0.CreateAIVoltageChan("Dev1/ai3", None, nidaq.DAQmx_Val_Diff, -1, 9, nidaq.DAQmx_Val_Volts, None)
-    # task0.CfgSampClkTiming(None, Fs, nidaq.DAQmx_Val_Rising, nidaq.DAQmx_Val_FiniteSamps, readLen)
+    # DAQ configuration
+    task0.CreateAIVoltageChan("Dev1/ai2", None, nidaq.DAQmx_Val_Diff, -1, 4, nidaq.DAQmx_Val_Volts, None)
+    task0.CreateAIVoltageChan("Dev1/ai3", None, nidaq.DAQmx_Val_Diff, -1, 9, nidaq.DAQmx_Val_Volts, None)
+    task0.CfgSampClkTiming(None, Fs, nidaq.DAQmx_Val_Rising, nidaq.DAQmx_Val_FiniteSamps, readLen)
 
-    task1.CreateDOChan("Dev1/port0/line0", None, nidaq.DAQmx_Val_ChanPerLine)
+    task1.CreateDOChan("Dev1/port0/line0:2", None, nidaq.DAQmx_Val_ChanPerLine)
 
+    # DAQ start
     task1.StartTask()
-    # task0.StartTask()
+    task0.StartTask()
     print("Start sampling...")
-    # time0 = time.time()
+    time0 = time.time()
 
-    # task1.WriteDigitalLines(readLen, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, outData, None, None)
+    # Repeat charging and discharging
+    for i in range(2):
+        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Charge, None, None)
+        time.sleep(1)
+        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
+        time.sleep(1)
+        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Discharge, None, None)
+        time.sleep(1)
+        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
+        time.sleep(1)
 
-    for ti in range(readLen):
-        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, IO_High, None, None)
+    task0.ReadAnalogF64(nidaq.DAQmx_Val_Auto, 1.0, nidaq.DAQmx_Val_GroupByChannel, daqdata, len(daqdata),
+                        nidaq.byref(actualReadNum), None)
 
-        target_time = time.clock() + half_dt
-        while time.clock() < target_time:
-            pass
+    # Safety measure
+    task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
 
-        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, IO_Low, None, None)
+    print("Total time = %.3f sec - Actual read sample number = %d" % (time.time() - time0, actualReadNum.value))
 
-        target_time = time.clock() + half_dt
-        while time.clock() < target_time:
-            pass
-
-    # task0.ReadAnalogF64(readLen, TimeOut+1, nidaq.DAQmx_Val_GroupByChannel, daqdata, len(daqdata)*2,
-    #                     nidaq.byref(actualReadNum), None)
-
-    # print("Sample time = %.3f sec - Actual readed sample number = %d" % (time.time() - time0, actualReadNum.value))
-    # task0.StopTask()
+    task0.StopTask()
     task1.StopTask()
     print("Task completed!")
     task0.ClearTask()
     task1.ClearTask()
 
-# daqdata = daqdata.reshape(2,-1).T
-#
-# dispdata = daqdata
-# if(showPressure):
-#     dispdata[:,1] = (dispdata[:,1]-calib[1])*calib[0]
-#
-# fig1 = plt.figure(figsize = (16,6))
-# fig1.suptitle(("Fs = %.0f Hz" % Fs), fontsize=12)
-# ax = fig1.add_subplot(111)
-# ax.set_xlabel('Samples')
-#
-# if(showPressure):
-#     ax.set_ylabel('Pressure (Bar)', color='tab:red')
-# else:
-#     ax.set_ylabel('Voltage (V)', color='tab:orange')
-#
-# t = np.arange(actualReadNum.value)/Fs
-#
-# ax.plot(t, dispdata[:,1], '-', color='tab:red')
-# ax.tick_params(axis='y', labelcolor='tab:red')
-#
-# ax2 = ax.twinx()
-# ax2.plot(t, daqOutput, '--', color='tab:gray')
-# ax2.plot(t, dispdata[:,0], '--', color='tab:blue')
-# ax2.set_ylabel('Output Voltage (kV)', color='tab:blue')
-# ax2.tick_params(axis='y', labelcolor='tab:blue')
-#
-# fig1.tight_layout()
-# plt.show()
+daqdata = daqdata.reshape(AnalogInputNum,-1).T
+
+'''-------------------------------------------------------------------------------'''
+dispdata = daqdata
+if(showPressure):
+    dispdata[:,1] = (dispdata[:,1]-calib[1])*calib[0]
+
+fig1 = plt.figure(figsize = (16,6))
+fig1.suptitle(("Fs = %.0f Hz" % Fs), fontsize=12)
+ax = fig1.add_subplot(111)
+ax.set_xlabel('Samples')
+
+if(showPressure):
+    ax.set_ylabel('Pressure (Bar)', color='tab:red')
+else:
+    ax.set_ylabel('Voltage (V)', color='tab:orange')
+
+t = np.arange(actualReadNum.value)/Fs
+
+# Measured pressure
+ax.plot(t, dispdata[:,1], '-', color='tab:red')
+ax.tick_params(axis='y', labelcolor='tab:red')
+
+# Reference (control) signal
+ax2 = ax.twinx()
+ax2.plot(t, dispdata[:,0], '--', color='tab:blue')
+ax2.set_ylabel('Control signal (V)', color='tab:blue')
+ax2.tick_params(axis='y', labelcolor='tab:blue')
+
+fig1.tight_layout()
+plt.show()
 '''-------------------------------------------------------------------------------'''
 # currentTime = time.strftime("%H-%M-%S", time.localtime())
 #
