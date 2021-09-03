@@ -11,7 +11,7 @@ import PyDAQmx as nidaq
 
 AnalogInputNum = 2
 Fs = 1000.0 # Sampling frequency
-MeasureTime = 8 # Measurement time, in seconds. (7)
+MeasureTime = 11 # Measurement time, in seconds. (7)
 showPressure = True # To display in raw unit (voltage) or converted to pressure unit
 
 # Define control signals
@@ -45,19 +45,24 @@ with nidaq.Task() as task0, nidaq.Task() as task1:
     print("Start sampling...")
     time0 = time.time()
 
+    task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
+    time.sleep(1)
+
     # Repeat charging and discharging
     for i in range(2):
         task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Charge, None, None)
         time.sleep(1)
         task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
-        time.sleep(1)
+        time.sleep(0.1)
         task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Discharge, None, None)
-        time.sleep(1)
-        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
-        time.sleep(1)
+        time.sleep(0.2)
 
-    task0.ReadAnalogF64(nidaq.DAQmx_Val_Auto, 1.0, nidaq.DAQmx_Val_GroupByChannel, daqdata, len(daqdata),
-                        nidaq.byref(actualReadNum), None)
+        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
+        time.sleep(3)
+
+    task0.ReadAnalogF64(numSampsPerChan = nidaq.DAQmx_Val_Auto, timeout = nidaq.DAQmx_Val_WaitInfinitely,
+                        fillMode = nidaq.DAQmx_Val_GroupByChannel, readArray = daqdata, arraySizeInSamps = len(daqdata),
+                        sampsPerChanRead = nidaq.byref(actualReadNum), reserved = None)
 
     # Safety measure
     task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
@@ -102,9 +107,9 @@ ax2.tick_params(axis='y', labelcolor='tab:blue')
 fig1.tight_layout()
 plt.show()
 '''-------------------------------------------------------------------------------'''
-# currentTime = time.strftime("%H-%M-%S", time.localtime())
-#
-# trial = 0
-#
-# np.savetxt(("Data_Fs%d_at%s_TestBipolar_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
-# print("Data saved on %s" % currentTime)
+currentTime = time.strftime("%H-%M-%S", time.localtime())
+
+trial = 4
+
+np.savetxt(("Data_Fs%d_at%s_Disch20Intv10B6kV_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
+print("Data saved on %s" % currentTime)
