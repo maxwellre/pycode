@@ -109,7 +109,7 @@ plt.show()
 '''-------------------------------------------------------------------------------'''
 currentTime = time.strftime("%H-%M-%S", time.localtime())
 
-trial = 4
+trial = 10
 
 np.savetxt(("Data_Fs%d_at%s_Disch20Intv10B6kV_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
 print("Data saved on %s" % currentTime)
