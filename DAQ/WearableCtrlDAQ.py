@@ -73,7 +73,7 @@ with nidaq.Task() as task0, nidaq.Task() as task1:
 
 daqdata = daqdata.reshape(2,-1).T
 
-dispdata = daqdata
+dispdata = daqdata.copy()
 if(showPressure):
     dispdata[:,1] = (dispdata[:,1]-calib[1])*calib[0]
 

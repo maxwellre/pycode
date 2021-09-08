@@ -50,3 +50,4 @@ with nidaq.Task() as task1:
     task1.StopTask()
     print("Task completed!")
     task1.ClearTask()
+

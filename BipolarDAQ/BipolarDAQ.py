@@ -78,7 +78,7 @@ with nidaq.Task() as task0, nidaq.Task() as task1:
 daqdata = daqdata.reshape(AnalogInputNum,-1).T
 
 '''-------------------------------------------------------------------------------'''
-dispdata = daqdata
+dispdata = daqdata.copy()
 if(showPressure):
     dispdata[:,1] = (dispdata[:,1]-calib[1])*calib[0]
 
@@ -109,7 +109,9 @@ plt.show()
 '''-------------------------------------------------------------------------------'''
 currentTime = time.strftime("%H-%M-%S", time.localtime())
 
-trial = 10
+print(np.max(dispdata[:,1]), np.max(daqdata[:,1]))
 
-np.savetxt(("Data_Fs%d_at%s_Disch20Intv10B6kV_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
+trial = 0
+
+np.savetxt(("Data_Fs%d_at%s_Disch20Intv10B6.9kV_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
 print("Data saved on %s" % currentTime)
