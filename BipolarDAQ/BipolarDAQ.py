@@ -78,29 +78,26 @@ with nidaq.Task() as task0, nidaq.Task() as task1:
 daqdata = daqdata.reshape(AnalogInputNum,-1).T
 
 '''-------------------------------------------------------------------------------'''
-dispdata = daqdata.copy()
-if(showPressure):
-    dispdata[:,1] = (dispdata[:,1]-calib[1])*calib[0]
-
 fig1 = plt.figure(figsize = (16,6))
 fig1.suptitle(("Fs = %.0f Hz" % Fs), fontsize=12)
 ax = fig1.add_subplot(111)
 ax.set_xlabel('Samples')
 
-if(showPressure):
-    ax.set_ylabel('Pressure (Bar)', color='tab:red')
-else:
-    ax.set_ylabel('Voltage (V)', color='tab:orange')
-
 t = np.arange(actualReadNum.value)/Fs
 
-# Measured pressure
-ax.plot(t, dispdata[:,1], '-', color='tab:red')
-ax.tick_params(axis='y', labelcolor='tab:red')
+if(showPressure):
+    # Measured pressure
+    ax.plot(t, (daqdata[:,1]-calib[1])*calib[0], '-', color='tab:red')
+    ax.set_ylabel('Pressure (Bar)', color='tab:red')
+    ax.tick_params(axis='y', labelcolor='tab:red')
+else:
+    ax.plot(t, daqdata[:,1], '-', color='tab:orange')
+    ax.set_ylabel('Voltage (V)', color='tab:orange')
+    ax.tick_params(axis='y', labelcolor='tab:orange')
 
 # Reference (control) signal
 ax2 = ax.twinx()
-ax2.plot(t, dispdata[:,0], '--', color='tab:blue')
+ax2.plot(t, daqdata[:,0], '--', color='tab:blue')
 ax2.set_ylabel('Control signal (V)', color='tab:blue')
 ax2.tick_params(axis='y', labelcolor='tab:blue')
 
@@ -108,8 +105,6 @@ fig1.tight_layout()
 plt.show()
 '''-------------------------------------------------------------------------------'''
 currentTime = time.strftime("%H-%M-%S", time.localtime())
-
-print(np.max(dispdata[:,1]), np.max(daqdata[:,1]))
 
 trial = 0
 
