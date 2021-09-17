@@ -10,8 +10,8 @@ import PyDAQmx as nidaq
 import sys
 
 # MARCO
-F_CLK = 1000000.0 # DOI Clock frequency (Circuit control sampling frequency, Hz)
-F_PWM = 2000 # PWM frequency (Output waveform sampling frequency, Hz)
+F_CLK = 10000.0 # DOI Clock frequency (Circuit control sampling frequency, Hz)
+F_PWM = 1000 # PWM frequency (Output waveform sampling frequency, Hz)
 
 # Parameters
 MeasureTime = 2.0 # Measurement time, in seconds.
@@ -38,7 +38,7 @@ HV_Off = np.zeros((1,2), dtype=np.uint8) # Total number of channels = ?
 #
 # DIOout = np.tile(PWMout, (PWMnum,1))
 def Percent2PWM(direction, percentage = 0.0):
-    PWMout = np.zeros((PWMpulseCLKnum, 2), dtype=np.uint8)
+    PWMout = np.zeros((PWMpulseCLKnum, 3), dtype=np.uint8)
     if(direction == 'charge'):
         PWMout[:int(percentage * 0.01 * PWMpulseCLKnum), 0] = 1 # Charge cycle
     elif(direction == 'discharge'):
@@ -48,11 +48,19 @@ def Percent2PWM(direction, percentage = 0.0):
     return PWMout
 
 t = np.arange(PWMnum)/F_PWM
-sinFreq = 10
+sinFreq = 20
 y = -50*np.cos(2*np.pi*sinFreq*t)+50
 
 DIOout = np.array([Percent2PWM('charge', yi) for yi in y], dtype=np.uint8)
-DIOout = DIOout.reshape((-1,2))
+DIOout = DIOout.reshape((-1,3))
+
+dischargeBlock = np.zeros((int(0.2*F_CLK),3), dtype=np.uint8)
+dischargeBlock[:,1] = 1
+DIOout = np.append(DIOout, dischargeBlock, axis=0)
+DIOout[:,2] = 1
+
+DIOout = np.append(DIOout, np.zeros((int(0.1*F_CLK),3), dtype=np.uint8), axis=0) # Append 0.1 sec of zeros at the end
+
 DIOoutLen = DIOout.shape[0] # (= MeasureTime * F_PWM * int(F_CLK/F_PWM))
 print("DIOout Shape: ", DIOout.shape)
 DIOout[-1,:] = 0 # Ensure all channels are turned off at the end
@@ -60,14 +68,14 @@ DIOout[-1,:] = 0 # Ensure all channels are turned off at the end
 # fig1 = plt.figure(figsize = (16,6))
 # fig1.suptitle(("Sine Freq = %.0f Hz" % sinFreq), fontsize=12)
 # ax = fig1.add_subplot(111)
-# # ax.plot(t, y, '-', color='tab:red')
-# ax.plot(DIOout[:,0], '-', color='tab:red')
+# ax.plot(t, y, '-', color='tab:red')
+# # ax.plot(DIOout)
 # plt.show()
 
 '''-------------------------------------------------------------------------------'''
 
 with nidaq.Task() as task1:
-    task1.CreateDOChan("Dev2/port0/line2:3", None, nidaq.DAQmx_Val_ChanPerLine)
+    task1.CreateDOChan("Dev2/port0/line2:3,Dev2/port0/line11", None, nidaq.DAQmx_Val_ChanPerLine)
     task1.CfgSampClkTiming(source = "OnboardClock", rate = F_CLK, activeEdge=nidaq.DAQmx_Val_Rising,
                            sampleMode=nidaq.DAQmx_Val_FiniteSamps, sampsPerChan=DIOoutLen)
 
@@ -79,7 +87,7 @@ with nidaq.Task() as task1:
     task1.StartTask()
     print("Start sampling...")
 
-    time.sleep(MeasureTime)
+    time.sleep(MeasureTime + 0.3)
 
     task1.StopTask()
     print("Task completed!")
