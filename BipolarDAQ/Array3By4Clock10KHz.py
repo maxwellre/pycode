@@ -11,7 +11,7 @@ import PyDAQmx as nidaq
 import sys
 
 # MARCO
-F_CLK = 50.0 # DOI Clock frequency (Circuit control sampling frequency, Hz)
+F_CLK = 1000.0 # DOI Clock frequency (Circuit control sampling frequency, Hz)
 
 NODE_NUM = 12 # 3HV * 4GND array of nodes
 
@@ -24,50 +24,84 @@ DISCHARGE_XY = [[1,6],[1,7],[1,8],[1,9],
                 [5,6],[5,7],[5,8],[5,9]]
 
 # Parameters
-frameChargeRepNum = 20 # Number of repetitions of charge per animation frame (per node) = 20
-frameDischargeRepNum = 22 # Number of repetitions of discharge per animation frame (per node) = 12
+frameChargeRepNum =160 # Number of repetitions of charge per animation frame (per node) = 20
+frameDischargeRepNum = 200 # Number of repetitions of discharge per animation frame (per node) = 12
 frameIntvTime = 0.01 # (sec) Time pause interval between two frames
 
 # animation = np.array([
 # [0, 0, 0, 0,
-# 0, 1, 1, 0,
+# 0, 0, 0, 0,
+# 1, 0, 0, 0],
+# [0, 0, 0, 0,
+# 0, 1, 0, 0,
 # 0, 0, 0, 0],
+#
+# [-1, -1, -1, -1,
+# -1, -1, -1, -1,
+# -1, -1, -1, -1],
+#
+# [0, 0, 0, 0,
+# 0, 0, 0, 0,
+# 0, 0, 0, 1],
+# [0, 0, 0, 0,
+# 0, 0, 1, 0,
+# 0, 0, 0, 0],
+#
+# [-1, -1, -1, -1,
+# -1, -1, -1, -1,
+# -1, -1, -1, -1],
+#
+# [0, 0, 0, 1,
+# 0, 0, 0, 0,
+# 0, 0, 0, 0],
+# [0, 0, 0, 0,
+# 0, 0, 1, 0,
+# 0, 0, 0, 0],
+#
+# [-1, -1, -1, -1,
+# -1, -1, -1, -1,
+# -1, -1, -1, -1],
+#
+# [1, 0, 0, 0,
+# 0, 0, 0, 0,
+# 0, 0, 0, 0],
+# [0, 0, 0, 0,
+# 0, 1, 0, 0,
+# 0, 0, 0, 0],
+#
 # [-1, -1, -1, -1,
 # -1, -1, -1, -1,
 # -1, -1, -1, -1]
 # ])
 
+# nodeSeq = [0, 1, 2, 3, 7, 11, 10, 9, 8, 4]
+# animation = np.empty((0,12))
+# for nodeSi in nodeSeq:
+#     temp = np.zeros((1,12))
+#     temp[0,nodeSi] = 1
+#     animation = np.append(animation, temp, axis=0)
+# animation = np.append(animation, -1*np.ones((1,12)), axis=0)
+# print(animation)
+
 animation = np.array([
 [1, 0, 0, 0,
-0, 1, 1, 0,
+0, 0, 0, 0,
 0, 0, 0, 0],
 
 [0, 0, 0, 0,
-1, 1, 1, 0,
+0, 0, 0, 0,
 0, 0, 0, 0],
 
-[0, 0, 0, -1,
-0, 1, 1, 0,
-1, 0, 0, 0],
-
 [0, 0, 0, 0,
-0, 1, 1, 0,
-1, 1, 0, 0],
+0, 1, 0, 0,
+0, 0, 0, 0],
 
-[-1, -1, -1, -1,
--1, -1, -1, -1,
--1, -1, -1, -1],
-[-1, -1, -1, -1,
--1, -1, -1, -1,
--1, -1, -1, -1],
 [-1, -1, -1, -1,
 -1, -1, -1, -1,
 -1, -1, -1, -1]
 ])
 
-
-
-# animation = np.tile(animation, (2, 1))
+# animation = np.tile(animation, (5, 1))
 
 frameNum = animation.shape[0]
 
