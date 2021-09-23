@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 import PyDAQmx as nidaq
 
 Fs = 1000 # Samples_Per_Sec = 5000
-TimeOut = 20 # The amount of time, in seconds, to wait for the function to read.
+TimeOut = 6 # The amount of time, in seconds, to wait for the function to read.
 showPressure = True
-OutputVolt = 7.0
+OutputVolt = 10.0
 
 '''-------------------------------------------------------------------------------'''
 readLen = TimeOut * Fs # The number of samples, per channel, to read
@@ -77,9 +77,9 @@ plt.show()
 '''-------------------------------------------------------------------------------'''
 currentTime = time.strftime("%H-%M-%S", time.localtime())
 
-trial = 6
+trial = 5
 
-np.savetxt(("Data_Fs%d_at%s_MLSi20B7kV_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
+np.savetxt(("Data_Fs%d_at%s_NewTubeB7kV_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
 
 # bar = 0.000
 #

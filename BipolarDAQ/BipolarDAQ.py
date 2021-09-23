@@ -11,16 +11,16 @@ import PyDAQmx as nidaq
 
 AnalogInputNum = 2
 Fs = 1000.0 # Sampling frequency
-MeasureTime = 11 # Measurement time, in seconds. (7)
+MeasureTime = 12 # Measurement time, in seconds. (7)
 showPressure = True # To display in raw unit (voltage) or converted to pressure unit
 
 # Define control signals
 HV_Off = np.zeros((1,3), dtype=np.uint8)
 HV_Charge = np.zeros((1,3), dtype=np.uint8)
 HV_Discharge = np.zeros((1,3), dtype=np.uint8)
-HV_Charge[0,1:] = 1 # DIO line1 controls Positive HV (charge line)
+HV_Charge[0,1:] = 1 # DIO line1 controls Positive HV (charge line) and sync signal line
 HV_Discharge[0,0] = 1 # DIO line0 controls Negative HV (discharge line)
-HV_Discharge[0,2] = 1
+HV_Discharge[0,2] = 1 # ... and sync signal line
 
 '''-------------------------------------------------------------------------------'''
 readLen = int(MeasureTime * Fs) # The number of samples, per channel, to read
@@ -49,16 +49,40 @@ with nidaq.Task() as task0, nidaq.Task() as task1:
     time.sleep(1)
 
     # Repeat charging and discharging
-    for i in range(2):
+    for i in range(1):
+        for j in range(10):
+            task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Charge, None, None)
+            time.sleep(j*0.002)
+            task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
+            time.sleep(0.002)
+
         task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Charge, None, None)
-        time.sleep(1)
-        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
-        time.sleep(0.1)
-        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Discharge, None, None)
-        time.sleep(0.2)
+        time.sleep(2)
 
         task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
-        time.sleep(3)
+        time.sleep(4)
+
+        for j in range(10):
+            task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Discharge, None, None)
+            time.sleep(j*0.002)
+            task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
+            time.sleep(0.002)
+
+        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Discharge, None, None)
+        time.sleep(2)
+
+        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
+        time.sleep(1)
+
+        # To restore actuator
+        for j in range(10):
+            task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Charge, None, None)
+            time.sleep(j*0.002)
+            task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
+            time.sleep(0.002)
+
+        task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
+        time.sleep(1)
 
     task0.ReadAnalogF64(numSampsPerChan = nidaq.DAQmx_Val_Auto, timeout = nidaq.DAQmx_Val_WaitInfinitely,
                         fillMode = nidaq.DAQmx_Val_GroupByChannel, readArray = daqdata, arraySizeInSamps = len(daqdata),
@@ -106,7 +130,7 @@ plt.show()
 '''-------------------------------------------------------------------------------'''
 currentTime = time.strftime("%H-%M-%S", time.localtime())
 
-trial = 0
+trial = 3
 
-np.savetxt(("Data_Fs%d_at%s_Disch20Intv10B6.9kV_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
+np.savetxt(("Data_Fs%d_at%s_Tube8mmU7kV_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
 print("Data saved on %s" % currentTime)
