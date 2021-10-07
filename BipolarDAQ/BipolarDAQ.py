@@ -131,5 +131,5 @@ currentTime = time.strftime("%H-%M-%S", time.localtime())
 
 trial = 0
 
-np.savetxt(("Data_Fs%d_at%s_PressureLessOil3U6900V_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
+np.savetxt(("Data_Fs%d_at%s_FR3TubeActual8mmU6900V_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
 print("Data saved on %s" % currentTime)

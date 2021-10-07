@@ -74,14 +74,16 @@ frameIntvTime = 0.01 # (sec) Time pause interval between two frames
 # -1, -1, -1, -1]
 # ])
 
-nodeSeq = [0, 1, 2, 3, 7, 11, 10, 9, 8, 4]
-animation = np.empty((0,12))
-for nodeSi in nodeSeq:
-    temp = np.zeros((1,12))
-    temp[0,nodeSi] = 1
-    animation = np.append(animation, temp, axis=0)
-    animation = np.append(animation, -1*np.ones((1,12)), axis=0)
-print(animation)
+# Going around ---------------------------------------------------
+# nodeSeq = [0, 1, 2, 3, 7, 11, 10, 9, 8, 4]
+# animation = np.empty((0,12))
+# for nodeSi in nodeSeq:
+#     temp = np.zeros((1,12))
+#     temp[0,nodeSi] = 1
+#     animation = np.append(animation, temp, axis=0)
+#     animation = np.append(animation, -1*np.ones((1,12)), axis=0)
+# print(animation)
+# ----------------------------------------------------------------
 
 # animation = np.array([
 # # [0, 0, 0, 0,
@@ -101,7 +103,43 @@ print(animation)
 # -1, -1, -1, -1]
 # ])
 
-# animation = np.tile(animation, (3, 1))
+#---------------------------------------------
+
+animation = np.array([
+[0, 0, 0, 0,
+1, 0, 0, 0,
+0, 0, 0, 0],
+
+[-1, -1, -1, -1,
+-1, -1, -1, -1,
+-1, -1, -1, -1],
+
+[0, 0, 0, 0,
+0, 1, 0, 0,
+0, 0, 0, 0],
+
+[-1, -1, -1, -1,
+-1, -1, -1, -1,
+-1, -1, -1, -1],
+
+[0, 0, 0, 0,
+0, 0, 1, 0,
+0, 0, 0, 0],
+
+[-1, -1, -1, -1,
+-1, -1, -1, -1,
+-1, -1, -1, -1],
+
+[0, 0, 0, 0,
+0, 0, 0, 1,
+0, 0, 0, 0],
+
+[-1, -1, -1, -1,
+-1, -1, -1, -1,
+-1, -1, -1, -1]
+])
+
+# animation = np.tile(animation, (2, 1))
 
 frameNum = animation.shape[0]
 
