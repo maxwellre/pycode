@@ -129,7 +129,7 @@ plt.show()
 '''-------------------------------------------------------------------------------'''
 currentTime = time.strftime("%H-%M-%S", time.localtime())
 
-trial = 0
+trial = 10
 
-np.savetxt(("Data_Fs%d_at%s_FR3TubeActual8mmU6900V_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
+np.savetxt(("Data_Fs%d_at%s_SiTube8mmU6900V_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
 print("Data saved on %s" % currentTime)
