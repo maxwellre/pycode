@@ -2,7 +2,7 @@
 Control the new bipolar HV board (electrode-array) via NI DAQ.
 (Optional) Measurement via NI DAQ.
 Author: Yitian Shao (ytshao@is.mpg.de)
-Created on 2021.09.17 based on 'B3HV4GNDDAQ.py'
+Created on 2021.09.17 based on 'B3HV4GNDDAQ (Obsolete).py'
 '''
 import time
 import numpy as np
@@ -75,7 +75,8 @@ frameIntvTime = 0.01 # (sec) Time pause interval between two frames
 # ])
 
 # Going around ---------------------------------------------------
-# nodeSeq = [0, 1, 2, 3, 7, 11, 10, 9, 8, 4]
+# # nodeSeq = [0, 1, 2, 3, 7, 11, 10, 9, 8, 4]
+# nodeSeq = [4, 8, 9, 10, 11, 7, 3, 2, 1, 0]
 # animation = np.empty((0,12))
 # for nodeSi in nodeSeq:
 #     temp = np.zeros((1,12))
@@ -105,39 +106,23 @@ frameIntvTime = 0.01 # (sec) Time pause interval between two frames
 
 #---------------------------------------------
 
-animation = np.array([
-[0, 0, 0, 0,
-1, 0, 0, 0,
-0, 0, 0, 0],
+# animation = np.array([
+# [0, 0, 0, 0,
+# 1, 0, 0, 0,
+# 0, 0, 0, 0],
+#
+# [-1, -1, -1, -1,
+# -1, -1, -1, -1,
+# -1, -1, -1, -1],
 
-[-1, -1, -1, -1,
--1, -1, -1, -1,
--1, -1, -1, -1],
-
-[0, 0, 0, 0,
-0, 1, 0, 0,
-0, 0, 0, 0],
-
-[-1, -1, -1, -1,
--1, -1, -1, -1,
--1, -1, -1, -1],
-
-[0, 0, 0, 0,
-0, 0, 1, 0,
-0, 0, 0, 0],
-
-[-1, -1, -1, -1,
--1, -1, -1, -1,
--1, -1, -1, -1],
-
-[0, 0, 0, 0,
-0, 0, 0, 1,
-0, 0, 0, 0],
-
-[-1, -1, -1, -1,
--1, -1, -1, -1,
--1, -1, -1, -1]
-])
+# [0, 0, 0, 0,
+# 0, 0, 0, 1,
+# 0, 0, 0, 0],
+#
+# [-1, -1, -1, -1,
+# -1, -1, -1, -1,
+# -1, -1, -1, -1]
+# ])
 
 # animation = np.tile(animation, (2, 1))
 
