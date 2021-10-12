@@ -82,62 +82,64 @@ else: # DC activation signal for each frame
     frameChargeRepNum =3600 # Number of repetitions of charge per animation frame (per node) = 3600 (*NODE_NUM/F_CLK sec)
     frameDischargeRepNum = 4000 # Number of repetitions of discharge per animation frame (per node) = 4000  (*NODE_NUM/F_CLK sec)
 
-    animation = np.array([
-    [0, 0, 0, 0,
-    0, 0, 0, 0,
-    1, 0, 0, 0],
-    [0, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 0, 0],
+    if 1:
+        animation = np.array([
+        [0, 0, 0, 0,
+        0, 0, 0, 0,
+        1, 0, 0, 0],
+        [0, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 0, 0],
 
-    [-1, -1, -1, -1,
-    -1, -1, -1, -1,
-    -1, -1, -1, -1],
+        [-1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1],
 
-    [0, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 1],
-    [0, 0, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 0],
+        [0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 1],
+        [0, 0, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 0],
 
-    [-1, -1, -1, -1,
-    -1, -1, -1, -1,
-    -1, -1, -1, -1],
+        [-1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1],
 
-    [0, 0, 0, 1,
-    0, 0, 0, 0,
-    0, 0, 0, 0],
-    [0, 0, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 0],
+        [0, 0, 0, 1,
+        0, 0, 0, 0,
+        0, 0, 0, 0],
+        [0, 0, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 0],
 
-    [-1, -1, -1, -1,
-    -1, -1, -1, -1,
-    -1, -1, -1, -1],
+        [-1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1],
 
-    [1, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0],
-    [0, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 0, 0],
+        [1, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0],
+        [0, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 0, 0],
 
-    [-1, -1, -1, -1,
-    -1, -1, -1, -1,
-    -1, -1, -1, -1]
-    ])
+        [-1, -1, -1, -1,
+        -1, -1, -1, -1,
+        -1, -1, -1, -1]
+        ])
 
     # Going around ---------------------------------------------------
-    # # nodeSeq = [0, 1, 2, 3, 7, 11, 10, 9, 8, 4]
-    # nodeSeq = [4, 8, 9, 10, 11, 7, 3, 2, 1, 0]
-    # animation = np.empty((0,12))
-    # for nodeSi in nodeSeq:
-    #     temp = np.zeros((1,12))
-    #     temp[0,nodeSi] = 1
-    #     animation = np.append(animation, temp, axis=0)
-    #     animation = np.append(animation, -1*np.ones((1,12)), axis=0)
-    # print(animation)
+    else:
+        nodeSeq = [0, 1, 2, 3, 7, 11, 10, 9, 8, 4]
+        # nodeSeq = [4, 8, 9, 10, 11, 7, 3, 2, 1, 0]
+        animation = np.empty((0,12))
+        for nodeSi in nodeSeq:
+            temp = np.zeros((1,12))
+            temp[0,nodeSi] = 1
+            animation = np.append(animation, temp, axis=0)
+            animation = np.append(animation, -1*np.ones((1,12)), axis=0)
+        print(animation)
     # ----------------------------------------------------------------
 
     # animation = np.array([
