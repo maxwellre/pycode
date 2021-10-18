@@ -78,7 +78,7 @@ with nidaq.Task() as task0, nidaq.Task() as task1:
 
         # To restore actuator
         task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Charge, None, None)
-        time.sleep(0.4)
+        time.sleep(0.3)
 
         task1.WriteDigitalLines(1, False, 1.0, nidaq.DAQmx_Val_GroupByChannel, HV_Off, None, None)
         time.sleep(1)
@@ -129,7 +129,7 @@ plt.show()
 '''-------------------------------------------------------------------------------'''
 currentTime = time.strftime("%H-%M-%S", time.localtime())
 
-trial = 10
+trial = 0
 
-np.savetxt(("Data_Fs%d_at%s_SiTube8mmU6900V_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
+np.savetxt(("Data_Fs%d_at%s_FR3U6900V_t%02d.csv" % (Fs, currentTime, trial)), daqdata, delimiter=",")
 print("Data saved on %s" % currentTime)

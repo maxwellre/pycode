@@ -46,7 +46,7 @@ def Percent2PWM(CLKnum, pinCharge, pinDischarge, pinGND, percentage = 0.0):
 # Parameters
 frameIntvTime = 0.01 # (sec) Time pause interval between two frames
 
-usePWM = 0 # Turn on PWM control, otherwise perform constant charge/discharge action for each frame
+usePWM = 1 # Turn on PWM control, otherwise perform constant charge/discharge action for each frame
 
 DIOout = np.empty((0,Channel_Num), dtype=np.uint8)
 if (usePWM):
@@ -59,7 +59,7 @@ if (usePWM):
 
     # Generate sinusoid signals
     sinDuration = 5.0  # Total time duration (sec)
-    sinFreq = 50
+    sinFreq = 2
 
     t = np.arange(int(sinDuration * F_PWM)) / F_PWM
     y = -50 * np.cos(2 * np.pi * sinFreq * t) + 50 # y ranged from 0 to 100
@@ -157,7 +157,7 @@ else: # DC activation signal for each frame
 
     #---------------------------------------------
 
-    # animation = np.tile(animation, (2, 1))
+    animation = np.tile(animation, (5, 1))
 
     frameNum = animation.shape[0]
 
