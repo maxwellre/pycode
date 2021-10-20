@@ -46,7 +46,7 @@ def Percent2PWM(CLKnum, pinCharge, pinDischarge, pinGND, percentage = 0.0):
 # Parameters
 frameIntvTime = 0.01 # (sec) Time pause interval between two frames
 
-usePWM = 1 # Turn on PWM control, otherwise perform constant charge/discharge action for each frame
+usePWM = 0 # Turn on PWM control, otherwise perform constant charge/discharge action for each frame
 
 DIOout = np.empty((0,Channel_Num), dtype=np.uint8)
 if (usePWM):
@@ -59,12 +59,12 @@ if (usePWM):
 
     # Generate sinusoid signals
     sinDuration = 5.0  # Total time duration (sec)
-    sinFreq = 2
+    sinFreq = 250
 
     t = np.arange(int(sinDuration * F_PWM)) / F_PWM
     y = -50 * np.cos(2 * np.pi * sinFreq * t) + 50 # y ranged from 0 to 100
 
-    actNode = 4 # Range from 1 to 12
+    actNode = 7 # Range from 0 to 11
 
     oneBlock = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
                                      CHARGE_XY[actNode][1], yi) for yi in y], dtype=np.uint8)
@@ -79,10 +79,10 @@ if (usePWM):
         DIOout = np.append(DIOout, dischargeBlock, axis=0)
 
 else: # DC activation signal for each frame
-    frameChargeRepNum =3600 # Number of repetitions of charge per animation frame (per node) = 3600 (*NODE_NUM/F_CLK sec)
-    frameDischargeRepNum = 4000 # Number of repetitions of discharge per animation frame (per node) = 4000  (*NODE_NUM/F_CLK sec)
+    frameChargeRepNum =720 # Number of repetitions of charge per animation frame (per node) = 3600 (*NODE_NUM/F_CLK sec)
+    frameDischargeRepNum = 800 # Number of repetitions of discharge per animation frame (per node) = 4000  (*NODE_NUM/F_CLK sec)
 
-    if 1:
+    if 0:
         animation = np.array([
         [0, 0, 0, 0,
         0, 0, 0, 0,
@@ -141,14 +141,14 @@ else: # DC activation signal for each frame
             animation = np.append(animation, -1*np.ones((1,12)), axis=0)
         print(animation)
     # ----------------------------------------------------------------
-
+    #
     # animation = np.array([
-    # # [0, 0, 0, 0,
-    # # 0, 0, 0, 0,
-    # # 0, 0, 0, 1],
-    # # [0, 0, 0, 0,
-    # # 0, 1, 0, 0,
-    # # 0, 0, 0, 0],
+    # [0, 0, 0, 0,
+    # 0, 0, 0, 1,
+    # 0, 0, 0, 0],
+    # [0, 0, 1, 0,
+    # 0, 0, 0, 0,
+    # 0, 0, 0, 0],
     #
     # [-1, -1, -1, -1,
     # -1, -1, -1, -1,
