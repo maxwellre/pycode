@@ -1,4 +1,13 @@
 #include <WiFiNINA.h>
+/************Board Configuration************/
+#define DAC A0 // Reserved analog output pin
+/*Note: PWM pin 1 is reserved for relay!*/
+#define PWM0 3 // The PWM pin used to control optocoupler 0
+#define PWM1 4 // The PWM pin used to control optocoupler 1
+#define PWM2 5 // The PWM pin used to control optocoupler 2
+#define PWM3 6 // The PWM pin used to control optocoupler 3
+
+#define VOLT_LEVEL_NUM 4 // Number of voltage levels 
 
 char ssid[] = "HVCtrl";        // your network SSID (name)
 char pass[] = "1234";    // your network password (use for WPA, or use as key for WEP)
@@ -6,12 +15,32 @@ char pass[] = "1234";    // your network password (use for WPA, or use as key fo
 bool isConnected = false;
 
 int status = WL_IDLE_STATUS;
+
+float posiVoltDuration = 500; // Activation duration of positive voltage for zipping (Unit: ms)
+float negVoltDuration = 200; // Activation duration of negative voltage for discharging (Unit: ms)
+
+int PWMPercentageGain[VOLT_LEVEL_NUM] = {0, 10, 15, 100};  // (Unit: %)
+int voltageLevel = 0; // Range from 0 to 3 (must match the number of voltage levels)
+uint8_t PWMGain[VOLT_LEVEL_NUM] = {0};
+
 WiFiServer server(80); // web server on port 80
 
 void setup() {
   Serial.begin(115200);
   delay(500); while (!Serial); // wait for serial port to connect. Needed for native USB port only
 
+  /************Pin mode setup and Initialization************/
+  pinMode(PWM0, OUTPUT); 
+  digitalWrite(PWM0, LOW);// Must not use: analogWrite(PWM0,255); // Turn off the optocoupler 
+  pinMode(PWM1, OUTPUT); 
+  digitalWrite(PWM1, LOW);// Must not use: analogWrite(PWM1,255); // Turn off the optocoupler 
+  pinMode(PWM2, OUTPUT); 
+  digitalWrite(PWM2, LOW);// Must not use: analogWrite(PWM2,255); // Turn off the optocoupler 
+  pinMode(PWM3, OUTPUT); 
+  digitalWrite(PWM3, LOW);// Must not use: analogWrite(PWM2,255); // Turn off the optocoupler 
+
+  pinMode(LED_BUILTIN, OUTPUT);      
+  digitalWrite(LED_BUILTIN, LOW);
   Serial.println("Access Point Web Server");
 
   if (WiFi.status() == WL_NO_MODULE) {
@@ -27,7 +56,20 @@ void setup() {
   // wait 1 seconds for connection:
   delay(1000);
 
+  for(int i = 0; i < VOLT_LEVEL_NUM; i++) {
+    PWMGain[i] = 255*PWMPercentageGain[i]/100;
+    Serial.println(PWMGain[i]);
+  }
+
   server.begin();
+
+  // blink LED twice as a starting sign
+  for(int i = 0; i < 2; i++) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(200);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(200);
+  } 
 }
 
 void loop() {
@@ -47,8 +89,8 @@ void loop() {
       if (client.available()) { 
         /* ---------------- Receive a message ---------------- */
         String msg = client.readStringUntil('\r');
-        Serial.println(msg);
         client.flush();
+        //Serial.println(msg);
 
         /* ---------------- GUI Unconnected ---------------- */
         if ((msg == "request-to-connect-high-voltage-controller") && !isConnected) {    
@@ -58,20 +100,73 @@ void loop() {
 
         /* ---------------- GUI Connected ---------------- */
         if (isConnected) { // Connection established, program starts
-          if (msg == "button1-both") {
-            Serial.println("Pressed button1");
+          if (msg == "button1-both") { // ---------------- Button 1
+            Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain[voltageLevel]);
             client.println("command-received"); // Acknowledgement
-          }
-          else if (msg == "button2-left") {
-            Serial.println("Pressed button2");
+
+            analogWrite(PWM0, PWMGain[voltageLevel]);
+            analogWrite(PWM2, PWMGain[voltageLevel]);
+            delay(posiVoltDuration);
+            analogWrite(PWM0, 0);
+            analogWrite(PWM2, 0);
+            delay(1);
+            
+            analogWrite(PWM1, PWMGain[voltageLevel]);
+            analogWrite(PWM3, PWMGain[voltageLevel]);
+            delay(negVoltDuration);
+            analogWrite(PWM1, 0);
+            analogWrite(PWM3, 0);
+            delay(1);         
+          } /* ---------------- Botton 1 ---------------- */
+          
+          else if (msg == "button2-left") { // ---------------- Button 2
+            Serial.print("Pressed button2 Left PWM = "); Serial.println(PWMGain[voltageLevel]);
             client.println("command-received"); // Acknowledgement
-          }
-          else if (msg == "button3-right") {
-            Serial.println("Pressed button3");
+
+            analogWrite(PWM0, PWMGain[voltageLevel]);
+            delay(posiVoltDuration);
+            analogWrite(PWM0, 0);
+            delay(1);
+            
+            analogWrite(PWM1, PWMGain[voltageLevel]);
+            delay(negVoltDuration);
+            analogWrite(PWM1, 0);
+            delay(1); 
+          } /* ---------------- Botton 2 ---------------- */
+          
+          else if (msg == "button3-right") { // ---------------- Button 3
+            Serial.print("Pressed button3 Right PWM = "); Serial.println(PWMGain[voltageLevel]);
             client.println("command-received"); // Acknowledgement
-          }
-        }
-        
+
+            analogWrite(PWM2, PWMGain[voltageLevel]);
+            delay(posiVoltDuration);
+            analogWrite(PWM2, 0);
+            delay(1);
+            
+            analogWrite(PWM3, PWMGain[voltageLevel]);
+            delay(negVoltDuration);
+            analogWrite(PWM3, 0);
+            delay(1); 
+          } /* ---------------- Botton 3 ---------------- */
+          
+          else if (msg == "button4-set-voltage") { // ---------------- Button 4
+            client.println("command-received"); // Acknowledgement
+            
+            String msgValue = client.readStringUntil('\r');
+            client.flush();
+            
+            if(msgValue.substring(0,9) == "voltlevel") {
+              client.println("command-received"); // Acknowledgement for second-level command
+              voltageLevel = msgValue.substring(10,13).toInt();
+              //Serial.println(voltageLevel);
+
+              if ((voltageLevel >= VOLT_LEVEL_NUM) || (voltageLevel < 0)) {
+                voltageLevel = 0;
+              }
+            }
+          } /* ---------------- Botton 4 ---------------- */
+          
+        } /* ---------------- GUI available ---------------- */
       } /* ---------------- client available ---------------- */
     } /* ---------------- client connected ---------------- */
 
