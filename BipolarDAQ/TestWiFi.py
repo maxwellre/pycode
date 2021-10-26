@@ -19,32 +19,38 @@ HOST = '192.168.4.1'  # The server's hostname or IP address
 PORT = 80        # The port used by the server
 
 '''GUI Design'''
-window0 = visual.Window([800, 600], monitor="testMonitor", units="height", color=[-0.4, -0.4, -0.4])
+window0 = visual.Window([800, 600], monitor="testMonitor", units="height", color=[-0.7, -0.7, -0.7])
 mouse0 = event.Mouse()
 
 status0 = visual.TextStim(window0, pos=[0.0, 0.4], text='Connecting ...', height=0.05)
 
-message1 = visual.TextStim(window0, pos=[0.0, 0.4], text='Remote Control', height=0.05)
+message1 = visual.TextStim(window0, pos=[0.2, 0.4], text='Remote Control', height=0.05)
 
-light1 = visual.Circle(window0, pos=[0.3, 0.4], radius=0.03, fillColor=[0, 0, 0],
+light1 = visual.Circle(window0, pos=[0.5, 0.4], radius=0.03, fillColor=[0, 0, 0],
                        lineWidth=4, lineColor=[-0.2, -0.2, -0.2])
-button1 = visual.Rect(window0, pos=[0.0, 0.2], width=0.4, height=0.12, fillColor=LIGHT_GREEN,
+button1 = visual.Rect(window0, pos=[0.375, 0.2], width=0.45, height=0.12, fillColor=LIGHT_GREEN,
                       lineWidth=2, lineColor='white')
-button2 = visual.Rect(window0, pos=[-0.25, 0], width=0.4, height=0.12, fillColor=LIGHT_YELLOW,
+button2 = visual.Rect(window0, pos=[0.25, 0.03], width=0.2, height=0.12, fillColor=LIGHT_YELLOW,
                       lineWidth=2, lineColor='white')
-button3 = visual.Rect(window0, pos=[0.25, 0], width=0.4, height=0.12, fillColor=LIGHT_BLUE,
+button3 = visual.Rect(window0, pos=[0.5, 0.03], width=0.2, height=0.12, fillColor=LIGHT_BLUE,
                       lineWidth=2, lineColor='white')
 button1Text = visual.TextStim(window0, pos=button1.pos, text='Both', height=0.05)
 button2Text = visual.TextStim(window0, pos=button2.pos, text='Left', height=0.05)
 button3Text = visual.TextStim(window0, pos=button3.pos, text='Right', height=0.05)
 
-slider1 = visual.Slider(window0, ticks=[0, 1, 2, 3], labels=['0', '10', '15', '100'], startValue=0, pos=[-0.3, -0.2],
+slider1 = visual.Slider(window0, ticks=[0, 1, 2, 3], labels=['0', '10', '15', '100'], startValue=0, pos=[-0.4, -0.2],
                         size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0])
-slider1Text = visual.TextStim(window0, pos=[-0.3, -0.4], text='Voltage Level (%)', height=0.05)
+slider2 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=500, pos=[-0.4, 0.1],
+                        size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0])
+slider3 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=200, pos=[-0.4, 0.4],
+                        size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0])
+slider1Text = visual.TextStim(window0, pos=[-0.4, -0.4], text='Voltage Level (%)', height=0.05)
+#slider2Text = visual.TextStim(window0, slider2.pos, text='Charge (ms)', height=0.05)
+#slider3Text = visual.TextStim(window0, slider3.pos, text='Discharge (ms)', height=0.05)
 
-button4 = visual.Rect(window0, pos=[0.2, -0.3], width=0.3, height=0.12, fillColor=[0, 0, 0],
+button4 = visual.Rect(window0, pos=[0.2, -0.3], width=0.2, height=0.12, fillColor=[0, 0, 0],
                       lineWidth=2, lineColor='white')
-button4Text = visual.TextStim(window0, pos=button4.pos, text='Set Voltage', height=0.05)
+button4Text = visual.TextStim(window0, pos=button4.pos, text='Set', height=0.05)
 
 '''-------------------------------------------------------------------------------------------------------------'''
 '''Functions'''
@@ -58,7 +64,11 @@ def refreshWindow():
     button2Text.draw()
     button3Text.draw()
     slider1.draw()
+    slider2.draw()
+    slider3.draw()
     slider1Text.draw()
+    # slider2Text.draw()
+    # slider3Text.draw()
     button4.draw()
     button4Text.draw()
     window0.flip()
@@ -89,14 +99,15 @@ if __name__ == '__main__':
     light1.draw()
     window0.flip()
 
-    sock0 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock0.connect((HOST, PORT))
-    while not isConnected: # try to establish a WiFi connection
-        sock0.sendall(b'request-to-connect-high-voltage-controller') # "Handshake" protocol
-        ans = sock0.recv(1024)
-        if ans.decode() == "high-voltage-controller-is-ready": # "Handshake" protocol matched
-            isConnected = True
-            print("Successful connection to high voltage controller")
+    sock0 = None
+    # sock0 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # sock0.connect((HOST, PORT))
+    # while not isConnected: # try to establish a WiFi connection
+    #     sock0.sendall(b'request-to-connect-high-voltage-controller') # "Handshake" protocol
+    #     ans = sock0.recv(1024)
+    #     if ans.decode() == "high-voltage-controller-is-ready": # "Handshake" protocol matched
+    #         isConnected = True
+    #         print("Successful connection to high voltage controller")
 
     '''GUI Setup'''
     while True:
