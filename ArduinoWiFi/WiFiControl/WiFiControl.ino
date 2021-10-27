@@ -16,8 +16,8 @@ bool isConnected = false;
 
 int status = WL_IDLE_STATUS;
 
-float posiVoltDuration = 500; // Activation duration of positive voltage for zipping (Unit: ms)
-float negVoltDuration = 200; // Activation duration of negative voltage for discharging (Unit: ms)
+float chargeDuration = 500; // Activation duration of positive voltage for zipping (Unit: ms)
+float dischargeDuration = 200; // Activation duration of negative voltage for discharging (Unit: ms)
 
 int PWMPercentageGain[VOLT_LEVEL_NUM] = {0, 10, 15, 100};  // (Unit: %)
 int voltageLevel = 0; // Range from 0 to 3 (must match the number of voltage levels)
@@ -26,8 +26,8 @@ uint8_t PWMGain[VOLT_LEVEL_NUM] = {0};
 WiFiServer server(80); // web server on port 80
 
 void setup() {
-  Serial.begin(115200);
-  delay(500); while (!Serial); // wait for serial port to connect. Needed for native USB port only
+  //Serial.begin(115200);
+  //delay(500); while (!Serial); // wait for serial port to connect. Needed for native USB port only
 
   /************Pin mode setup and Initialization************/
   pinMode(PWM0, OUTPUT); 
@@ -41,16 +41,16 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);      
   digitalWrite(LED_BUILTIN, LOW);
-  Serial.println("Access Point Web Server");
+  //Serial.println("Access Point Web Server");
 
   if (WiFi.status() == WL_NO_MODULE) {
-    Serial.println("Communication with WiFi module failed!"); 
+    //Serial.println("Communication with WiFi module failed!"); 
     while (true); // don't continue
   }
 
   status = WiFi.beginAP(ssid, pass);
   if (status != WL_AP_LISTENING) {
-    Serial.println("Creating access point failed");
+    //Serial.println("Creating access point failed");
     while (true); // don't continue
   }
   // wait 1 seconds for connection:
@@ -58,7 +58,7 @@ void setup() {
 
   for(int i = 0; i < VOLT_LEVEL_NUM; i++) {
     PWMGain[i] = 255*PWMPercentageGain[i]/100;
-    Serial.println(PWMGain[i]);
+    //Serial.println(PWMGain[i]);
   }
 
   server.begin();
@@ -82,7 +82,7 @@ void loop() {
   WiFiClient client = server.available();   // listen for incoming clients
 
   if (client) {                             // if you get a client,
-    Serial.println("New client"); 
+    //Serial.println("New client"); 
 
     String currentLine = "";                // make a String to hold incoming data from the client
     while (client.connected()) {            // loop while the client's connected
@@ -101,52 +101,55 @@ void loop() {
         /* ---------------- GUI Connected ---------------- */
         if (isConnected) { // Connection established, program starts
           if (msg == "button1-both") { // ---------------- Button 1
-            Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain[voltageLevel]);
-            client.println("command-received"); // Acknowledgement
+            //Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain[voltageLevel]);          
 
             analogWrite(PWM0, PWMGain[voltageLevel]);
             analogWrite(PWM2, PWMGain[voltageLevel]);
-            delay(posiVoltDuration);
+            delay(chargeDuration);
             analogWrite(PWM0, 0);
             analogWrite(PWM2, 0);
             delay(1);
             
             analogWrite(PWM1, PWMGain[voltageLevel]);
             analogWrite(PWM3, PWMGain[voltageLevel]);
-            delay(negVoltDuration);
+            delay(dischargeDuration);
             analogWrite(PWM1, 0);
             analogWrite(PWM3, 0);
-            delay(1);         
+            delay(1);    
+
+            client.println("command-received"); // Acknowledgement
           } /* ---------------- Botton 1 ---------------- */
           
           else if (msg == "button2-left") { // ---------------- Button 2
-            Serial.print("Pressed button2 Left PWM = "); Serial.println(PWMGain[voltageLevel]);
-            client.println("command-received"); // Acknowledgement
+            //Serial.print("Pressed button2 Left PWM = "); Serial.println(PWMGain[voltageLevel]);
 
             analogWrite(PWM0, PWMGain[voltageLevel]);
-            delay(posiVoltDuration);
+            delay(chargeDuration);
             analogWrite(PWM0, 0);
             delay(1);
             
             analogWrite(PWM1, PWMGain[voltageLevel]);
-            delay(negVoltDuration);
+            delay(dischargeDuration);
             analogWrite(PWM1, 0);
             delay(1); 
+
+            client.println("command-received"); // Acknowledgement
           } /* ---------------- Botton 2 ---------------- */
           
           else if (msg == "button3-right") { // ---------------- Button 3
-            Serial.print("Pressed button3 Right PWM = "); Serial.println(PWMGain[voltageLevel]);
-            client.println("command-received"); // Acknowledgement
+            //Serial.print("Pressed button3 Right PWM = "); Serial.println(PWMGain[voltageLevel]);
 
             analogWrite(PWM2, PWMGain[voltageLevel]);
-            delay(posiVoltDuration);
+            delay(chargeDuration);
             analogWrite(PWM2, 0);
             delay(1);
             
             analogWrite(PWM3, PWMGain[voltageLevel]);
-            delay(negVoltDuration);
+            delay(dischargeDuration);
             analogWrite(PWM3, 0);
             delay(1); 
+
+            client.println("command-received"); // Acknowledgement
           } /* ---------------- Botton 3 ---------------- */
           
           else if (msg == "button4-set-voltage") { // ---------------- Button 4
@@ -156,14 +159,29 @@ void loop() {
             client.flush();
             
             if(msgValue.substring(0,9) == "voltlevel") {
-              client.println("command-received"); // Acknowledgement for second-level command
               voltageLevel = msgValue.substring(10,13).toInt();
-              //Serial.println(voltageLevel);
-
-              if ((voltageLevel >= VOLT_LEVEL_NUM) || (voltageLevel < 0)) {
-                voltageLevel = 0;
-              }
             }
+
+            if(msgValue.substring(14,21) == "chargeT") {
+              chargeDuration = msgValue.substring(22,26).toInt();
+            }
+
+            if(msgValue.substring(27,37) == "dischargeT") {
+              dischargeDuration = msgValue.substring(38,42).toInt();
+            }
+
+            /* Safety check */
+            if ((voltageLevel >= VOLT_LEVEL_NUM) || (voltageLevel < 0)) {
+                voltageLevel = 0;
+            }
+            if ((chargeDuration > 2000) || (chargeDuration < 0)) {
+                chargeDuration = 0;
+            }
+            if ((dischargeDuration > 2000) || (dischargeDuration < 0)) {
+                dischargeDuration = 0;
+            }
+            client.println("command-received"); // Acknowledgement for second-level command
+            //Serial.println(voltageLevel); Serial.println(chargeDuration); Serial.println(dischargeDuration);            
           } /* ---------------- Botton 4 ---------------- */
           
         } /* ---------------- GUI available ---------------- */
@@ -172,6 +190,6 @@ void loop() {
 
     client.stop();
     isConnected = false;
-    Serial.println("client disconnected");
+    //Serial.println("client disconnected");
   }
 }
