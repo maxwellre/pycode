@@ -19,15 +19,13 @@ int status = WL_IDLE_STATUS;
 float chargeDuration = 500; // Activation duration of positive voltage for zipping (Unit: ms)
 float dischargeDuration = 200; // Activation duration of negative voltage for discharging (Unit: ms)
 
-int PWMPercentageGain[VOLT_LEVEL_NUM] = {0, 10, 15, 100};  // (Unit: %)
-int voltageLevel = 0; // Range from 0 to 3 (must match the number of voltage levels)
-uint8_t PWMGain[VOLT_LEVEL_NUM] = {0};
+int voltageLevel = 0; // Range from 0 to 100 (Unit: %)
+uint8_t PWMGain = 0; // Range from 0 to 255
 
 WiFiServer server(80); // web server on port 80
 
 void setup() {
-  //Serial.begin(115200);
-  //delay(500); while (!Serial); // wait for serial port to connect. Needed for native USB port only
+  //Serial.begin(115200); delay(500); while (!Serial); // wait for serial port to connect
 
   /************Pin mode setup and Initialization************/
   pinMode(PWM0, OUTPUT); 
@@ -55,11 +53,6 @@ void setup() {
   }
   // wait 1 seconds for connection:
   delay(1000);
-
-  for(int i = 0; i < VOLT_LEVEL_NUM; i++) {
-    PWMGain[i] = 255*PWMPercentageGain[i]/100;
-    //Serial.println(PWMGain[i]);
-  }
 
   server.begin();
 
@@ -101,17 +94,17 @@ void loop() {
         /* ---------------- GUI Connected ---------------- */
         if (isConnected) { // Connection established, program starts
           if (msg == "button1-both") { // ---------------- Button 1
-            //Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain[voltageLevel]);          
+            //Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain);          
 
-            analogWrite(PWM0, PWMGain[voltageLevel]);
-            analogWrite(PWM2, PWMGain[voltageLevel]);
+            analogWrite(PWM0, PWMGain);
+            analogWrite(PWM2, PWMGain);
             delay(chargeDuration);
             analogWrite(PWM0, 0);
             analogWrite(PWM2, 0);
             delay(1);
             
-            analogWrite(PWM1, PWMGain[voltageLevel]);
-            analogWrite(PWM3, PWMGain[voltageLevel]);
+            analogWrite(PWM1, PWMGain);
+            analogWrite(PWM3, PWMGain);
             delay(dischargeDuration);
             analogWrite(PWM1, 0);
             analogWrite(PWM3, 0);
@@ -121,14 +114,14 @@ void loop() {
           } /* ---------------- Botton 1 ---------------- */
           
           else if (msg == "button2-left") { // ---------------- Button 2
-            //Serial.print("Pressed button2 Left PWM = "); Serial.println(PWMGain[voltageLevel]);
+            //Serial.print("Pressed button2 Left PWM = "); Serial.println(PWMGain);
 
-            analogWrite(PWM0, PWMGain[voltageLevel]);
+            analogWrite(PWM0, PWMGain);
             delay(chargeDuration);
             analogWrite(PWM0, 0);
             delay(1);
             
-            analogWrite(PWM1, PWMGain[voltageLevel]);
+            analogWrite(PWM1, PWMGain);
             delay(dischargeDuration);
             analogWrite(PWM1, 0);
             delay(1); 
@@ -137,14 +130,14 @@ void loop() {
           } /* ---------------- Botton 2 ---------------- */
           
           else if (msg == "button3-right") { // ---------------- Button 3
-            //Serial.print("Pressed button3 Right PWM = "); Serial.println(PWMGain[voltageLevel]);
+            //Serial.print("Pressed button3 Right PWM = "); Serial.println(PWMGain);
 
-            analogWrite(PWM2, PWMGain[voltageLevel]);
+            analogWrite(PWM2, PWMGain);
             delay(chargeDuration);
             analogWrite(PWM2, 0);
             delay(1);
             
-            analogWrite(PWM3, PWMGain[voltageLevel]);
+            analogWrite(PWM3, PWMGain);
             delay(dischargeDuration);
             analogWrite(PWM3, 0);
             delay(1); 
@@ -160,6 +153,8 @@ void loop() {
             
             if(msgValue.substring(0,9) == "voltlevel") {
               voltageLevel = msgValue.substring(10,13).toInt();
+
+              PWMGain = 255*voltageLevel/100;
             }
 
             if(msgValue.substring(14,21) == "chargeT") {
@@ -171,9 +166,6 @@ void loop() {
             }
 
             /* Safety check */
-            if ((voltageLevel >= VOLT_LEVEL_NUM) || (voltageLevel < 0)) {
-                voltageLevel = 0;
-            }
             if ((chargeDuration > 2000) || (chargeDuration < 0)) {
                 chargeDuration = 0;
             }
@@ -181,7 +173,7 @@ void loop() {
                 dischargeDuration = 0;
             }
             client.println("command-received"); // Acknowledgement for second-level command
-            //Serial.println(voltageLevel); Serial.println(chargeDuration); Serial.println(dischargeDuration);            
+            //Serial.println(PWMGain); Serial.println(chargeDuration); Serial.println(dischargeDuration);            
           } /* ---------------- Botton 4 ---------------- */
           
         } /* ---------------- GUI available ---------------- */

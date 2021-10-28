@@ -38,15 +38,15 @@ button1Text = visual.TextStim(window0, pos=button1.pos, text='Both', height=0.05
 button2Text = visual.TextStim(window0, pos=button2.pos, text='Left', height=0.05)
 button3Text = visual.TextStim(window0, pos=button3.pos, text='Right', height=0.05)
 
-slider1 = visual.Slider(window0, ticks=[0, 1, 2, 3], labels=['0', '10', '15', '100'], startValue=0, pos=[-0.38, -0.3],
-                        size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='scrollbar')
+slider1 = visual.Slider(window0, ticks=[0, 15, 50, 100], labels=['0', '15', '50', '100'], startValue=0, pos=[-0.38, -0.3],
+                        size=[0.44, 0.1], granularity=5, labelHeight=0.045, fillColor=[0.6,0,0], style='slider')
 slider2 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=500, pos=[-0.4, 0.0],
                         size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
 slider3 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=200, pos=[-0.4, 0.25],
                         size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
-slider1Text = visual.TextStim(window0, pos=[-0.37, -0.3], text='Voltage Level (%)', height=0.05)
-slider2Text = visual.TextStim(window0, pos=[-0.4, 0.0], text='Charge (ms)', height=0.05)
-slider3Text = visual.TextStim(window0, pos=[-0.4, 0.25], text='Discharge (ms)', height=0.05)
+slider1Text = visual.TextStim(window0, pos=[-0.37, -0.3], text='Voltage Level (%)', height=0.05, color='black')
+slider2Text = visual.TextStim(window0, pos=[-0.4, 0.0], text='Charge (ms)', height=0.05, color='black')
+slider3Text = visual.TextStim(window0, pos=[-0.4, 0.25], text='Discharge (ms)', height=0.05, color='black')
 
 button4 = visual.Rect(window0, pos=[0.05, -0.3], width=0.2, height=0.12, fillColor=[0, 0, 0],
                       lineWidth=1, lineColor='white')
