@@ -2,7 +2,7 @@
 Control the new bipolar HV board (electrode-array) via NI DAQ.
 (Optional) Measurement via NI DAQ.
 Author: Yitian Shao (ytshao@is.mpg.de)
-Created on 2021.09.17 based on 'B3HV4GNDDAQ (Obsolete).py'
+Created on 2021.11.01 based on 'Array3By4_Demo.py'
 '''
 import time
 import numpy as np
@@ -42,14 +42,15 @@ def Percent2PWM(CLKnum, pinCharge, pinDischarge, pinGND, percentage = 0.0):
 
     return PWMout
 '''-------------------------------------------------------------------------------'''
+fileName = "CarChasing2"
 
 # Parameters
 frameIntvTime = 0.01 # (sec) Time pause interval between two frames
 
-usePWM = 0 # Turn on PWM control, otherwise perform constant charge/discharge action for each frame
+enableDemo = 1
 
 DIOout = np.empty((0,Channel_Num), dtype=np.uint8)
-if (usePWM):
+if (enableDemo):
     F_PWM = 1000  # PWM frequency (Output waveform sampling frequency, Hz)
 
     # PWM info
@@ -61,8 +62,10 @@ if (usePWM):
     sinDuration = 10.0  # Total time duration (sec)
     sinFreq = 250
 
-    t = np.arange(int(sinDuration * F_PWM)) / F_PWM
-    y = -50 * np.cos(2 * np.pi * sinFreq * t) + 50 # y ranged from 0 to 100
+    # t = np.arange(int(sinDuration * F_PWM)) / F_PWM
+    # y = -50 * np.cos(2 * np.pi * sinFreq * t) + 50 # y ranged from 0 to 100
+
+    y = np.loadtxt("./Audio/%s_1000Hz.csv" % fileName)
 
     actNode = 6 # Range from 0 to 11
 
@@ -78,95 +81,15 @@ if (usePWM):
         dischargeBlock[:, [discharge_i,6,7,8,9]] = 1
         DIOout = np.append(DIOout, dischargeBlock, axis=0)
 
-else: # DC activation signal for each frame
+else: # Discharge all electrodes
     frameChargeRepNum =720 # Number of repetitions of charge per animation frame (per node) = 3600 (*NODE_NUM/F_CLK sec)
     frameDischargeRepNum = 800 # Number of repetitions of discharge per animation frame (per node) = 4000  (*NODE_NUM/F_CLK sec)
 
-    if 0:
-        animation = np.array([
-        [0, 0, 0, 0,
-        0, 0, 0, 0,
-        1, 0, 0, 0],
-        [0, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 0, 0],
-
-        [-1, -1, -1, -1,
-        -1, -1, -1, -1,
-        -1, -1, -1, -1],
-
-        [0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 1],
-        [0, 0, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 0],
-
-        [-1, -1, -1, -1,
-        -1, -1, -1, -1,
-        -1, -1, -1, -1],
-
-        [0, 0, 0, 1,
-        0, 0, 0, 0,
-        0, 0, 0, 0],
-        [0, 0, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 0],
-
-        [-1, -1, -1, -1,
-        -1, -1, -1, -1,
-        -1, -1, -1, -1],
-
-        [1, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0],
-        [0, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 0, 0],
-
-        [-1, -1, -1, -1,
-        -1, -1, -1, -1,
-        -1, -1, -1, -1]
-        ])
-
-    # Going around ---------------------------------------------------
-    else:
-        nodeSeq = [0, 1, 2, 3, 7, 11, 10, 9, 8, 4]
-        # nodeSeq = [4, 8, 9, 10, 11, 7, 3, 2, 1, 0]
-        animation = np.empty((0,12))
-        for nodeSi in nodeSeq:
-            temp = np.zeros((1,12))
-            temp[0,nodeSi] = 1
-            animation = np.append(animation, temp, axis=0)
-            animation = np.append(animation, -1*np.ones((1,12)), axis=0)
-        print(animation)
-    # ----------------------------------------------------------------
-
-    # animation = np.array([
-    # [1, 0, 0, 0,
-    # 0, 0, 0, 0,
-    # 0, 0, 0, 0],
-    #
-    # [0, 0, 0, 0,
-    #  0, 0, 0, 0,
-    #  1, 0, 0, 0],
-    #
-    # [-1, -1, -1, -1,
-    # -1, -1, -1, -1,
-    # -1, -1, -1, -1],
-    #
-    # [0, 0, 0, 0,
-    # 0, 0, 0, 1,
-    # 0, 0, 0, 0],
-    #
-    # [0, 0, 1, 0,
-    # 0, 0, 0, 0,
-    # 0, 0, 0, 0],
-    #
-    # [-1, -1, -1, -1,
-    # -1, -1, -1, -1,
-    # -1, -1, -1, -1]
-    # ])
+    animation = np.array([
+    [-1, -1, -1, -1,
+    -1, -1, -1, -1,
+    -1, -1, -1, -1]
+    ])
 
     #---------------------------------------------
 

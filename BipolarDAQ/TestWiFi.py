@@ -42,7 +42,7 @@ slider1 = visual.Slider(window0, ticks=[0, 15, 50, 100], labels=['0', '15', '50'
                         size=[0.44, 0.1], granularity=5, labelHeight=0.045, fillColor=[0.6,0,0], style='slider')
 slider2 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=500, pos=[-0.4, 0.0],
                         size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
-slider3 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=200, pos=[-0.4, 0.25],
+slider3 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=100, pos=[-0.4, 0.25],
                         size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
 slider1Text = visual.TextStim(window0, pos=[-0.37, -0.3], text='Voltage Level (%)', height=0.05, color='black')
 slider2Text = visual.TextStim(window0, pos=[-0.4, 0.0], text='Charge (ms)', height=0.05, color='black')
