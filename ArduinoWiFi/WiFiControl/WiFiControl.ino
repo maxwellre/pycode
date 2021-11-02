@@ -16,8 +16,8 @@ bool isConnected = false;
 
 int status = WL_IDLE_STATUS;
 
-float chargeDuration = 500; // Activation duration of positive voltage for zipping (Unit: ms)
-float dischargeDuration = 200; // Activation duration of negative voltage for discharging (Unit: ms)
+float chargeDuration = 800; // Activation duration of positive voltage for zipping (Unit: ms)
+float dischargeDuration = 250; // Activation duration of negative voltage for discharging (Unit: ms)
 
 int voltageLevel = 0; // Range from 0 to 100 (Unit: %)
 uint8_t PWMGain = 0; // Range from 0 to 255
@@ -29,13 +29,13 @@ void setup() {
 
   /************Pin mode setup and Initialization************/
   pinMode(PWM0, OUTPUT); 
-  digitalWrite(PWM0, LOW);// Must not use: analogWrite(PWM0,255); // Turn off the optocoupler 
+  analogWrite(PWM0, 0);// Must not use: analogWrite(PWM0,255); // Turn off the optocoupler 
   pinMode(PWM1, OUTPUT); 
-  digitalWrite(PWM1, LOW);// Must not use: analogWrite(PWM1,255); // Turn off the optocoupler 
+  analogWrite(PWM1, 0);// Must not use: analogWrite(PWM1,255); // Turn off the optocoupler 
   pinMode(PWM2, OUTPUT); 
-  digitalWrite(PWM2, LOW);// Must not use: analogWrite(PWM2,255); // Turn off the optocoupler 
+  analogWrite(PWM2, 0);// Must not use: analogWrite(PWM2,255); // Turn off the optocoupler 
   pinMode(PWM3, OUTPUT); 
-  digitalWrite(PWM3, LOW);// Must not use: analogWrite(PWM2,255); // Turn off the optocoupler 
+  analogWrite(PWM3, 0);// Must not use: analogWrite(PWM2,255); // Turn off the optocoupler 
 
   pinMode(LED_BUILTIN, OUTPUT);      
   digitalWrite(LED_BUILTIN, LOW);
@@ -94,21 +94,36 @@ void loop() {
         /* ---------------- GUI Connected ---------------- */
         if (isConnected) { // Connection established, program starts
           if (msg == "button1-both") { // ---------------- Button 1
-            //Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain);          
+            //Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain);   
 
-            analogWrite(PWM0, PWMGain);
-            analogWrite(PWM2, PWMGain);
-            delay(chargeDuration);
+            float indiDuration = chargeDuration*0.2;
+
+            for(int indi_i = 0; indi_i < 5; indi_i++) {
+              analogWrite(PWM2, 0);
+              analogWrite(PWM0, PWMGain);
+              delay(indiDuration);
+              
+              analogWrite(PWM0, 0);
+              analogWrite(PWM2, PWMGain);
+              delay(indiDuration);
+            }
             analogWrite(PWM0, 0);
             analogWrite(PWM2, 0);
             delay(1);
-            
-            analogWrite(PWM1, PWMGain);
-            analogWrite(PWM3, PWMGain);
-            delay(dischargeDuration);
+
+            indiDuration = dischargeDuration*0.2;
+            for(int indi_i = 0; indi_i < 5; indi_i++) {
+              analogWrite(PWM3, 0);
+              analogWrite(PWM1, PWMGain);
+              delay(indiDuration);
+              
+              analogWrite(PWM1, 0);
+              analogWrite(PWM3, PWMGain);
+              delay(indiDuration);
+            }
             analogWrite(PWM1, 0);
             analogWrite(PWM3, 0);
-            delay(1);    
+            delay(1);
 
             client.println("command-received"); // Acknowledgement
           } /* ---------------- Botton 1 ---------------- */
@@ -166,10 +181,10 @@ void loop() {
             }
 
             /* Safety check */
-            if ((chargeDuration > 2000) || (chargeDuration < 0)) {
+            if ((chargeDuration > 4000) || (chargeDuration < 0)) {
                 chargeDuration = 0;
             }
-            if ((dischargeDuration > 2000) || (dischargeDuration < 0)) {
+            if ((dischargeDuration > 4000) || (dischargeDuration < 0)) {
                 dischargeDuration = 0;
             }
             client.println("command-received"); // Acknowledgement for second-level command
