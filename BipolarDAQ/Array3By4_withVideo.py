@@ -4,14 +4,22 @@ Control the new bipolar HV board (electrode-array) via NI DAQ.
 Author: Yitian Shao (ytshao@is.mpg.de)
 Created on 2021.11.01 based on 'Array3By4_Demo.py'
 '''
+
+import psychopy.visual as pv
+from psychopy import core, gui, data, event
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 import PyDAQmx as nidaq
+import subprocess
 import sys
 
 # MARCO
+LED_RED = [1.0,-1.0,-1.0]
+LED_GREEN = [-1.0,1.0,-1.0]
+
 F_CLK = 100000.0 # DOI Clock frequency (Circuit control sampling frequency, Hz)
+F_PWM = 1000  # PWM frequency (Output waveform sampling frequency, Hz)
 
 NODE_NUM = 12 # 3HV * 4GND array of nodes
 Channel_Num = 10 # 3HV*2 + 4GND channels
@@ -25,7 +33,49 @@ DISCHARGE_XY = [[1,6],[1,7],[1,8],[1,9],
                 [5,6],[5,7],[5,8],[5,9]]
 
 '''-------------------------------------------------------------------------------'''
+'''GUI Design'''
+# Main control monitor
+window0 = pv.Window([800, 600], screen=0, monitor="testMonitor", units="height", color=[-0.7, -0.7, -0.7])
+mouse0 = event.Mouse()
+
+message1 = pv.TextStim(window0, pos=[0.0, 0.42], text='Visual Haptic Display', height=0.05)
+
+light1 = pv.Circle(window0, pos=[0.4, 0.42], radius=0.03, fillColor=[0, 0, 0],
+                       lineWidth=4, lineColor=[-0.2, -0.2, -0.2])
+
+button1 = pv.Rect(window0, pos=[-0.3, 0.28], width=0.5, height=0.12, fillColor=[0, 0, 0],
+                      lineWidth=1, lineColor='white')
+button1Text = pv.TextStim(window0, pos=button1.pos, text='Movie: Car Chasing', height=0.05)
+
+button2 = pv.Rect(window0, pos=[-0.3, 0.12], width=0.5, height=0.12, fillColor=[0, 0, 0],
+                      lineWidth=1, lineColor='white')
+button2Text = pv.TextStim(window0, pos=button2.pos, text='Clip: Baby', height=0.05)
+
+button3 = pv.Rect(window0, pos=[-0.3, -0.04], width=0.5, height=0.12, fillColor=[0, 0, 0],
+                      lineWidth=1, lineColor='white')
+button3Text = pv.TextStim(window0, pos=button3.pos, text='Clip: Heartbeat', height=0.05)
+
+# Haptic screen monitor
+# window2 = pv.Window([2560, 1600], screen=2, fullscr=True, units="height", color=[-1.0, -1.0, -1.0])
+# message2 = pv.TextStim(window2, pos=[-0.2, 0], text='DEMO', height=0.4)
+
+'''-------------------------------------------------------------------------------'''
 '''Functions'''
+def refreshWindow():
+    message1.draw()
+    light1.draw()
+
+    button1.draw()
+    button1Text.draw()
+
+    button2.draw()
+    button2Text.draw()
+
+    button3.draw()
+    button3Text.draw()
+
+    window0.flip()
+
 def Percent2PWM(CLKnum, pinCharge, pinDischarge, pinGND, percentage = 0.0):
     PWMratioInd = int(percentage * 0.01 * CLKnum)
 
@@ -41,123 +91,233 @@ def Percent2PWM(CLKnum, pinCharge, pinDischarge, pinGND, percentage = 0.0):
     PWMout[:, pinGND] = 1  # GND
 
     return PWMout
+
+def Animation2DIO(animation, frameChargeRepNum=720, frameDischargeRepNum=800):
+    dischargeNode = np.arange(start=0, stop=NODE_NUM * frameDischargeRepNum,
+                              step=NODE_NUM)  # Discharge node discrete indices
+    chargeNode = dischargeNode[:frameChargeRepNum]  # Charging node indices
+
+    DIOBlock = np.empty((0, Channel_Num), dtype=np.uint8)
+    for animFrame in animation:
+        # Each frame: Node number * Repetition of tick per node * (1 active tick + 1 empty tick)
+        oneFrame = np.zeros((NODE_NUM * frameDischargeRepNum * 2, Channel_Num), dtype=np.uint8)
+
+        chargeInd = np.where(animFrame == 1)[0]
+        for i in chargeInd:
+            oneFrame[(chargeNode + i) * 2, CHARGE_XY[i][0]] = 1
+            oneFrame[(chargeNode + i) * 2, CHARGE_XY[i][1]] = 1
+
+        dischargeInd = np.where(animFrame == -1)[0]
+        for i in dischargeInd:
+            oneFrame[(dischargeNode + i) * 2, DISCHARGE_XY[i][0]] = 1
+            oneFrame[(dischargeNode + i) * 2, DISCHARGE_XY[i][1]] = 1
+
+        DIOBlock = np.append(DIOBlock, oneFrame, axis=0)
+
+    return DIOBlock
+
 '''-------------------------------------------------------------------------------'''
 fileName = "CarChasing2"
 
 # Parameters
 frameIntvTime = 0.01 # (sec) Time pause interval between two frames
 
-enableDemo = 1
+# PWM info
+PWMpulseWidth = 1.0 / F_PWM
+PWMpulseCLKnum = int(F_CLK * PWMpulseWidth)  # Total sample number per PWM segment
+print("PWM frequency = %.1f Hz, PWM duration = %.1f us (%d CLK ticks)" % (F_PWM, 1e6 * PWMpulseWidth, PWMpulseCLKnum))
 
-DIOout = np.empty((0,Channel_Num), dtype=np.uint8)
-if (enableDemo):
-    F_PWM = 1000  # PWM frequency (Output waveform sampling frequency, Hz)
-
-    # PWM info
-    PWMpulseWidth = 1.0 / F_PWM
-    PWMpulseCLKnum = int(F_CLK * PWMpulseWidth)  # Total sample number per PWM segment
-    print("PWM frequency = %.1f Hz, PWM duration = %.1f us (%d CLK ticks)"%(F_PWM, 1e6 * PWMpulseWidth, PWMpulseCLKnum))
-
-    # Generate sinusoid signals
-    sinDuration = 10.0  # Total time duration (sec)
-    sinFreq = 250
-
-    # t = np.arange(int(sinDuration * F_PWM)) / F_PWM
-    # y = -50 * np.cos(2 * np.pi * sinFreq * t) + 50 # y ranged from 0 to 100
-
-    y = np.loadtxt("./Audio/%s_1000Hz.csv" % fileName)
-
-    actNode = 6 # Range from 0 to 11
-
-    oneBlock = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
-                                     CHARGE_XY[actNode][1], yi) for yi in y], dtype=np.uint8)
-    oneBlock = oneBlock.reshape((-1, Channel_Num))
-
-    DIOout = np.append(DIOout, oneBlock, axis=0)
-
-    # Discharge for 1.0 second
-    for discharge_i in [1,3,5]:
-        dischargeBlock = np.zeros((int(1.0*F_CLK), Channel_Num), dtype=np.uint8)
-        dischargeBlock[:, [discharge_i,6,7,8,9]] = 1
-        DIOout = np.append(DIOout, dischargeBlock, axis=0)
-
-else: # Discharge all electrodes
-    frameChargeRepNum =720 # Number of repetitions of charge per animation frame (per node) = 3600 (*NODE_NUM/F_CLK sec)
-    frameDischargeRepNum = 800 # Number of repetitions of discharge per animation frame (per node) = 4000  (*NODE_NUM/F_CLK sec)
-
-    animation = np.array([
-    [-1, -1, -1, -1,
-    -1, -1, -1, -1,
-    -1, -1, -1, -1]
-    ])
-
-    #---------------------------------------------
-
-    animation = np.tile(animation, (10, 1))
-
-    frameNum = animation.shape[0]
-
-    # Constant charging (DC)
-    dischargeNode = np.arange(start=0, stop=NODE_NUM * frameDischargeRepNum, step=NODE_NUM) # Discharge node discrete indices
-    chargeNode = dischargeNode[:frameChargeRepNum]  # Charging node indices
-
-    for animFrame in animation:
-        # Each frame: Node number * Repetition of tick per node * (1 active tick + 1 empty tick)
-        oneFrame = np.zeros((NODE_NUM*frameDischargeRepNum*2,Channel_Num), dtype=np.uint8)
-
-        chargeInd = np.where(animFrame == 1)[0]
-        for i in chargeInd:
-            oneFrame[(chargeNode+i)*2, CHARGE_XY[i][0]] = 1
-            oneFrame[(chargeNode+i)*2, CHARGE_XY[i][1]] = 1
-
-        dischargeInd = np.where(animFrame == -1)[0]
-        for i in dischargeInd:
-            oneFrame[(dischargeNode+i)*2, DISCHARGE_XY[i][0]] = 1
-            oneFrame[(dischargeNode+i)*2, DISCHARGE_XY[i][1]] = 1
-
-        DIOout = np.append(DIOout, oneFrame, axis=0)
-        # DIOout = np.append(DIOout, np.zeros((int(frameIntvTime*F_CLK),10), dtype=np.uint8), axis=0)
-
-# Safety measure
-DIOout[-1,:] = 0 # Ensure all channels are turned off at the end
-
-DIOoutLen = DIOout.shape[0] # (= MeasureTime * F_PWM * int(F_CLK/F_PWM))
-print("DIOout Shape: ", DIOout.shape)
-
-measureTime = (DIOoutLen/F_CLK)
-print("Total time = %.3f sec" % measureTime)
-'''-------------------------------------------------------------------------------'''
-''' Debug Tool'''
-dispOutput = 0
-if dispOutput:
-    fig1 = plt.figure(figsize = (16,6))
-    fig1.suptitle(("CLK Freq = %.0f Hz" % F_CLK), fontsize=12)
-    ax = fig1.add_subplot(111)
-    t = np.arange(DIOoutLen)/F_CLK
-    for i in range(10):
-        ax.plot(t, DIOout[:,i]*0.5+i, '-')
-        # ax.plot(t, DIOout[:, i] + i * 2, '.-')
-    plt.show()
 '''-------------------------------------------------------------------------------'''
 if __name__ == '__main__':
+    # mov1 = pv.MovieStim(window2, "./Audio_Video/CarChasing2.mp4") # Play video via Psychopy
+    # message2.draw()
+    # window2.flip()
+
     with nidaq.Task() as task1:
         # DAQ configuration
         task1.CreateDOChan("Dev2/port0/line0:5,Dev2/port0/line10:13", None, nidaq.DAQmx_Val_ChanPerLine)
-        task1.CfgSampClkTiming(source="OnboardClock", rate=F_CLK, activeEdge=nidaq.DAQmx_Val_Rising,
-                               sampleMode=nidaq.DAQmx_Val_FiniteSamps, sampsPerChan=DIOoutLen)
 
-        task1.WriteDigitalLines(numSampsPerChan=DIOoutLen, autoStart=False,
-                                timeout=nidaq.DAQmx_Val_WaitInfinitely, dataLayout=nidaq.DAQmx_Val_GroupByScanNumber,
-                                writeArray=DIOout, reserved=None, sampsPerChanWritten=None)
+        '''GUI Loop'''
+        while True:
+            refreshWindow()
 
-        # ------------ start ------------ #
-        task1.StartTask()
-        print("Start sampling...")
+            if mouse0.isPressedIn(button1, buttons=[0]): # ---------------------------------------- Button 1: CarChasing
+                # GUI update
+                button1.setFillColor([-0.8, -0.8, -0.8])
+                light1.setFillColor(LED_RED)
+                refreshWindow()
 
-        time.sleep(measureTime + 0.1)
+                # Load source sigal and construct DAQ output
+                tactileSig = np.loadtxt("./Audio/%s_1000Hz.csv" % fileName)
 
-        task1.StopTask()
-        print("Task completed!")
-        task1.ClearTask()
+                actNode = 6  # Range from 0 to 11
+
+                oneBlock = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
+                                                 CHARGE_XY[actNode][1], yi) for yi in tactileSig], dtype=np.uint8)
+                oneBlock = oneBlock.reshape((-1, Channel_Num))
+
+                DIOout = np.empty((0, Channel_Num), dtype=np.uint8)
+                DIOout = np.append(DIOout, oneBlock, axis=0)
+                for discharge_i in [1, 3, 5]: # Discharge for 0.2 second
+                    dischargeBlock = np.zeros((int(0.2 * F_CLK), Channel_Num), dtype=np.uint8)
+                    dischargeBlock[:, [discharge_i, 6, 7, 8, 9]] = 1
+                    DIOout = np.append(DIOout, dischargeBlock, axis=0)
+
+                # Safety measure
+                DIOout[-1, :] = 0  # Ensure all channels are turned off at the end
+
+                DIOoutLen = DIOout.shape[0]  # (= MeasureTime * F_PWM * int(F_CLK/F_PWM))
+                print("DIOout Shape: ", DIOout.shape)
+                measureTime = (DIOoutLen / F_CLK)
+                print("Total time = %.3f sec" % measureTime)
+
+                # Play video using external video player
+                subprocess.call(".\Audio_Video\CarChasing2.bat")
+
+                # Initialize DAQ
+                task1.CfgSampClkTiming(source="OnboardClock", rate=F_CLK, activeEdge=nidaq.DAQmx_Val_Rising,
+                                       sampleMode=nidaq.DAQmx_Val_FiniteSamps, sampsPerChan=DIOoutLen)
+                task1.WriteDigitalLines(numSampsPerChan=DIOoutLen, autoStart=False,
+                                        timeout=nidaq.DAQmx_Val_WaitInfinitely,
+                                        dataLayout=nidaq.DAQmx_Val_GroupByScanNumber,
+                                        writeArray=DIOout, reserved=None, sampsPerChanWritten=None)
+
+                time.sleep(1.0)
+                task1.StartTask(); print("Display running ...")
+                time.sleep(measureTime + 0.1)
+                task1.StopTask(); print("Display finished")
+
+                light1.setFillColor(LED_GREEN)
+            else:
+                button1.setFillColor([0, 0, 0])
+
+            if mouse0.isPressedIn(button2, buttons=[0]): # ---------------------------------------------- Button 2: Baby
+                # GUI update
+                button2.setFillColor([-0.8, -0.8, -0.8])
+                light1.setFillColor(LED_RED)
+                refreshWindow()
+
+                # Construct DAQ output
+                animation = np.array([
+                    [1, 0, 0, 0,
+                     0, 0, 0, 0,
+                     1, 0, 0, 0],
+                    [0, 0, 0, 0,
+                     0, 1, 0, 0,
+                     0, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 1,
+                     0, 0, 0, 0,
+                     0, 0, 0, 1],
+                    [0, 0, 0, 0,
+                     0, 0, 1, 0,
+                     0, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1]
+                ])
+
+                animation = np.tile(animation, (10, 1))
+
+                DIOout = Animation2DIO(animation, frameChargeRepNum=560, frameDischargeRepNum=600)
+
+                # Safety measure
+                DIOout[-1, :] = 0  # Ensure all channels are turned off at the end
+
+                DIOoutLen = DIOout.shape[0]  # (= MeasureTime * F_PWM * int(F_CLK/F_PWM))
+                print("DIOout Shape: ", DIOout.shape)
+                measureTime = (DIOoutLen / F_CLK)
+                print("Total time = %.3f sec" % measureTime)
+
+                # Play video using external video player
+                subprocess.call(".\Audio_Video\Baby.bat")
+
+                # Initialize DAQ
+                task1.CfgSampClkTiming(source="OnboardClock", rate=F_CLK, activeEdge=nidaq.DAQmx_Val_Rising,
+                                       sampleMode=nidaq.DAQmx_Val_FiniteSamps, sampsPerChan=DIOoutLen)
+                task1.WriteDigitalLines(numSampsPerChan=DIOoutLen, autoStart=False,
+                                        timeout=nidaq.DAQmx_Val_WaitInfinitely,
+                                        dataLayout=nidaq.DAQmx_Val_GroupByScanNumber,
+                                        writeArray=DIOout, reserved=None, sampsPerChanWritten=None)
+
+                time.sleep(1.0)
+                task1.StartTask(); print("Display running ...")
+                time.sleep(measureTime + 0.1)
+                task1.StopTask(); print("Display finished")
+
+                light1.setFillColor(LED_GREEN)
+            else:
+                button2.setFillColor([0, 0, 0])
+
+            if mouse0.isPressedIn(button3, buttons=[0]): # ----------------------------------------- Button 3: Heartbeat
+                # GUI update
+                button3.setFillColor([-0.8, -0.8, -0.8])
+                light1.setFillColor(LED_RED)
+                refreshWindow()
+
+                # Construct DAQ output
+                animation = np.array([
+                    [1, 0, 0, 0,
+                     0, 0, 0, 0,
+                     0, 0, 0, 0],
+                    [0, 1, 0, 0,
+                     1, 1, 0, 0,
+                     0, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 0,
+                     0, 0, 0, 0,
+                     0, 0, 0, 1],
+                    [0, 0, 0, 0,
+                     0, 0, 1, 1,
+                     0, 0, 1, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1]
+                ])
+
+                animation = np.tile(animation, (9, 1))
+
+                DIOout = Animation2DIO(animation, frameChargeRepNum=720, frameDischargeRepNum=800)
+
+                # Safety measure
+                DIOout[-1, :] = 0  # Ensure all channels are turned off at the end
+
+                DIOoutLen = DIOout.shape[0]  # (= MeasureTime * F_PWM * int(F_CLK/F_PWM))
+                print("DIOout Shape: ", DIOout.shape)
+                measureTime = (DIOoutLen / F_CLK)
+                print("Total time = %.3f sec" % measureTime)
+
+                # Play video using external video player
+                subprocess.call(".\Audio_Video\Heartbeat.bat")
+
+                # Initialize DAQ
+                task1.CfgSampClkTiming(source="OnboardClock", rate=F_CLK, activeEdge=nidaq.DAQmx_Val_Rising,
+                                       sampleMode=nidaq.DAQmx_Val_FiniteSamps, sampsPerChan=DIOoutLen)
+                task1.WriteDigitalLines(numSampsPerChan=DIOoutLen, autoStart=False,
+                                        timeout=nidaq.DAQmx_Val_WaitInfinitely,
+                                        dataLayout=nidaq.DAQmx_Val_GroupByScanNumber,
+                                        writeArray=DIOout, reserved=None, sampsPerChanWritten=None)
+
+                time.sleep(1.0)
+                task1.StartTask(); print("Display running ...")
+                time.sleep(measureTime + 0.1)
+                task1.StopTask(); print("Display finished")
+
+                light1.setFillColor(LED_GREEN)
+            else:
+                button3.setFillColor([0, 0, 0])
+
+            if 'escape' in event.getKeys():  # program ends
+                core.wait(0.1)
+                print("Demo Ended")
+                task1.ClearTask()
+                # window2.close()
+                window0.close()
+                core.quit()
+
 
 '''-------------------------------------------------------------------------------'''
