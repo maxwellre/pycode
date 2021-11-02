@@ -43,6 +43,9 @@ message1 = pv.TextStim(window0, pos=[0.0, 0.42], text='Visual Haptic Display', h
 light1 = pv.Circle(window0, pos=[0.4, 0.42], radius=0.03, fillColor=[0, 0, 0],
                        lineWidth=4, lineColor=[-0.2, -0.2, -0.2])
 
+button0 = pv.Rect(window0, pos=[-0.4, 0.42], width=0.06, height=0.06, fillColor=[0, 0.2, 0.8], lineWidth=0)
+button0Text = pv.TextStim(window0, pos=button0.pos, text='C', height=0.05)
+
 button1 = pv.Rect(window0, pos=[-0.3, 0.28], width=0.5, height=0.12, fillColor=[0, 0, 0],
                       lineWidth=1, lineColor='white')
 button1Text = pv.TextStim(window0, pos=button1.pos, text='Movie: Car Chasing', height=0.05)
@@ -55,6 +58,14 @@ button3 = pv.Rect(window0, pos=[-0.3, -0.04], width=0.5, height=0.12, fillColor=
                       lineWidth=1, lineColor='white')
 button3Text = pv.TextStim(window0, pos=button3.pos, text='Clip: Heartbeat', height=0.05)
 
+button4 = pv.Rect(window0, pos=[-0.3, -0.20], width=0.5, height=0.12, fillColor=[0, 0, 0],
+                      lineWidth=1, lineColor='red')
+button4Text = pv.TextStim(window0, pos=button4.pos, text='Clip: Ocean Waves', height=0.05)
+
+button5 = pv.Rect(window0, pos=[-0.3, -0.36], width=0.5, height=0.12, fillColor=[0, 0, 0],
+                      lineWidth=1, lineColor='red')
+button5Text = pv.TextStim(window0, pos=button5.pos, text='Movie: Frog', height=0.05)
+
 # Haptic screen monitor
 # window2 = pv.Window([2560, 1600], screen=2, fullscr=True, units="height", color=[-1.0, -1.0, -1.0])
 # message2 = pv.TextStim(window2, pos=[-0.2, 0], text='DEMO', height=0.4)
@@ -65,6 +76,9 @@ def refreshWindow():
     message1.draw()
     light1.draw()
 
+    button0.draw()
+    button0Text.draw()
+
     button1.draw()
     button1Text.draw()
 
@@ -73,6 +87,12 @@ def refreshWindow():
 
     button3.draw()
     button3Text.draw()
+
+    button4.draw()
+    button4Text.draw()
+
+    button5.draw()
+    button5Text.draw()
 
     window0.flip()
 
@@ -117,8 +137,6 @@ def Animation2DIO(animation, frameChargeRepNum=720, frameDischargeRepNum=800):
     return DIOBlock
 
 '''-------------------------------------------------------------------------------'''
-fileName = "CarChasing2"
-
 # Parameters
 frameIntvTime = 0.01 # (sec) Time pause interval between two frames
 
@@ -141,6 +159,48 @@ if __name__ == '__main__':
         while True:
             refreshWindow()
 
+            if mouse0.isPressedIn(button0, buttons=[0]): # ----------------------------------------- Button 0: Discharge
+                # GUI update
+                button0.setFillColor([-0.8, -0.8, 1.0])
+                light1.setFillColor(LED_RED)
+                refreshWindow()
+
+                # Construct DAQ output
+                animation = np.array([
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1]
+                ])
+
+                animation = np.tile(animation, (10, 1))
+
+                DIOout = Animation2DIO(animation)
+
+                # Safety measure
+                DIOout[-1, :] = 0  # Ensure all channels are turned off at the end
+
+                DIOoutLen = DIOout.shape[0]  # (= MeasureTime * F_PWM * int(F_CLK/F_PWM))
+                print("DIOout Shape: ", DIOout.shape)
+                measureTime = (DIOoutLen / F_CLK)
+                print("Total time = %.3f sec" % measureTime)
+
+                # Initialize DAQ
+                task1.CfgSampClkTiming(source="OnboardClock", rate=F_CLK, activeEdge=nidaq.DAQmx_Val_Rising,
+                                       sampleMode=nidaq.DAQmx_Val_FiniteSamps, sampsPerChan=DIOoutLen)
+                task1.WriteDigitalLines(numSampsPerChan=DIOoutLen, autoStart=False,
+                                        timeout=nidaq.DAQmx_Val_WaitInfinitely,
+                                        dataLayout=nidaq.DAQmx_Val_GroupByScanNumber,
+                                        writeArray=DIOout, reserved=None, sampsPerChanWritten=None)
+
+                time.sleep(1.0)
+                task1.StartTask(); print("Display running ...")
+                time.sleep(measureTime + 0.1)
+                task1.StopTask(); print("Display finished")
+
+                light1.setFillColor(LED_GREEN)
+            else:
+                button0.setFillColor([0, 0.2, 0.5])
+
             if mouse0.isPressedIn(button1, buttons=[0]): # ---------------------------------------- Button 1: CarChasing
                 # GUI update
                 button1.setFillColor([-0.8, -0.8, -0.8])
@@ -148,6 +208,7 @@ if __name__ == '__main__':
                 refreshWindow()
 
                 # Load source sigal and construct DAQ output
+                fileName = "CarChasing2"
                 tactileSig = np.loadtxt("./Audio/%s_1000Hz.csv" % fileName)
 
                 actNode = 6  # Range from 0 to 11
@@ -310,6 +371,166 @@ if __name__ == '__main__':
                 light1.setFillColor(LED_GREEN)
             else:
                 button3.setFillColor([0, 0, 0])
+
+            if mouse0.isPressedIn(button4, buttons=[0]): # ----------------------------------------------- Button 4: Sea
+                # GUI update
+                button4.setFillColor([-0.8, -0.8, -0.8])
+                light1.setFillColor(LED_RED)
+                refreshWindow()
+
+                # Construct DAQ output
+                animation = np.array([
+                    [0, 0, 0, 0,
+                     0, 0, 0, 0,
+                     0, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 1,
+                     0, 0, 0, 0,
+                     0, 0, 0, 1],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 1, 0,
+                     0, 0, 0, 0,
+                     0, 0, 1, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 1, 0, 0,
+                     0, 0, 0, 0,
+                     0, 1, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [1, 0, 0, 0,
+                     1, 0, 0, 0,
+                     1, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 0,
+                     0, 0, 0, 0,
+                     0, 0, 0, 0],
+                    [0, 0, 0, 0,
+                     0, 0, 0, 0,
+                     0, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 0,
+                     0, 0, 0, 0,
+                     0, 0, 0, 1],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 0,
+                     0, 0, 0, 1,
+                     0, 0, 1, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 1,
+                     0, 0, 1, 0,
+                     0, 1, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 1,
+                     0, 1, 0, 0,
+                     1, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 1, 0, 0,
+                     1, 0, 0, 0,
+                     0, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 0,
+                     0, 0, 0, 0,
+                     0, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1]
+                ])
+
+                DIOout = Animation2DIO(animation, frameChargeRepNum=800, frameDischargeRepNum=3500)
+
+                # Safety measure
+                DIOout[-1, :] = 0  # Ensure all channels are turned off at the end
+
+                DIOoutLen = DIOout.shape[0]  # (= MeasureTime * F_PWM * int(F_CLK/F_PWM))
+                print("DIOout Shape: ", DIOout.shape)
+                measureTime = (DIOoutLen / F_CLK)
+                print("Total time = %.3f sec" % measureTime)
+
+                # Play video using external video player
+                subprocess.call(".\Audio_Video\Sea.bat")
+
+                # Initialize DAQ
+                task1.CfgSampClkTiming(source="OnboardClock", rate=F_CLK, activeEdge=nidaq.DAQmx_Val_Rising,
+                                       sampleMode=nidaq.DAQmx_Val_FiniteSamps, sampsPerChan=DIOoutLen)
+                task1.WriteDigitalLines(numSampsPerChan=DIOoutLen, autoStart=False,
+                                        timeout=nidaq.DAQmx_Val_WaitInfinitely,
+                                        dataLayout=nidaq.DAQmx_Val_GroupByScanNumber,
+                                        writeArray=DIOout, reserved=None, sampsPerChanWritten=None)
+
+                time.sleep(1.0)
+                task1.StartTask(); print("Display running ...")
+                time.sleep(measureTime + 0.1)
+                task1.StopTask(); print("Display finished")
+
+                light1.setFillColor(LED_GREEN)
+            else:
+                button4.setFillColor([0, 0, 0])
+
+
+            if mouse0.isPressedIn(button5, buttons=[0]): # ---------------------------------------------- Button 5: Frog
+                # GUI update
+                button5.setFillColor([-0.8, -0.8, -0.8])
+                light1.setFillColor(LED_RED)
+                refreshWindow()
+
+                # Construct DAQ output
+                animation = np.array([
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1]
+                ])
+
+                DIOout = Animation2DIO(animation, frameChargeRepNum=720, frameDischargeRepNum=800)
+
+                # Safety measure
+                DIOout[-1, :] = 0  # Ensure all channels are turned off at the end
+
+                DIOoutLen = DIOout.shape[0]  # (= MeasureTime * F_PWM * int(F_CLK/F_PWM))
+                print("DIOout Shape: ", DIOout.shape)
+                measureTime = (DIOoutLen / F_CLK)
+                print("Total time = %.3f sec" % measureTime)
+
+                # Play video using external video player
+                subprocess.call(".\Audio_Video\Frog.bat")
+
+                # Initialize DAQ
+                task1.CfgSampClkTiming(source="OnboardClock", rate=F_CLK, activeEdge=nidaq.DAQmx_Val_Rising,
+                                       sampleMode=nidaq.DAQmx_Val_FiniteSamps, sampsPerChan=DIOoutLen)
+                task1.WriteDigitalLines(numSampsPerChan=DIOoutLen, autoStart=False,
+                                        timeout=nidaq.DAQmx_Val_WaitInfinitely,
+                                        dataLayout=nidaq.DAQmx_Val_GroupByScanNumber,
+                                        writeArray=DIOout, reserved=None, sampsPerChanWritten=None)
+
+                time.sleep(1.0)
+                task1.StartTask(); print("Display running ...")
+                time.sleep(measureTime + 0.1)
+                task1.StopTask(); print("Display finished")
+
+                light1.setFillColor(LED_GREEN)
+            else:
+                button5.setFillColor([0, 0, 0])
+
 
             if 'escape' in event.getKeys():  # program ends
                 core.wait(0.1)
