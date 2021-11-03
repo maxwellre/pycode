@@ -39,3 +39,8 @@ from nptdms import TdmsFile
 #                 FxData = temp[:]
 #
 #                 print(FxData)
+
+x = [[0,6],[0,7],[0,8],[0,9],
+             [2,6],[2,7],[2,8],[2,9],
+            [4,6],[4,7],[4,8],[4,9]]
+print(x[[2,3]])

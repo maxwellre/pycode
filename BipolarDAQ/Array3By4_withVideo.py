@@ -115,6 +115,13 @@ def Percent2PWM(CLKnum, pinCharge, pinDischarge, pinGND, percentage = 0.0):
 
     return PWMout
 
+def sinSignal(sinDuration = 10.0, sinFreq = 250): # Generate sinusoid signals with percentage range and zero start
+    # Total time duration (sec), Frequency (Hz)
+    t = np.arange(int(sinDuration * F_PWM)) / F_PWM
+    y = -50 * np.cos(2 * np.pi * sinFreq * t) + 50 # y ranged from 0 to 100 (%) to be passed to Percent2PWM()
+
+    return y
+
 def Animation2DIO(animation, frameChargeRepNum=720, frameDischargeRepNum=800):
     dischargeNode = np.arange(start=0, stop=NODE_NUM * frameDischargeRepNum,
                               step=NODE_NUM)  # Discharge node discrete indices
@@ -138,6 +145,26 @@ def Animation2DIO(animation, frameChargeRepNum=720, frameDischargeRepNum=800):
         DIOBlock = np.append(DIOBlock, oneFrame, axis=0)
 
     return DIOBlock
+
+def dischargeAll(dischargeDuration = 1.0):
+    # dischargeDuration (sec)
+    dischargeTicks = dischargeDuration*F_CLK
+    return Animation2DIO(-np.ones((1,12)), frameChargeRepNum=0,
+                         frameDischargeRepNum=int(dischargeTicks*0.5/NODE_NUM))
+
+''' Debug Tool'''
+def checkOutput(DIOout):
+    fig1 = plt.figure(figsize = (16,6))
+    fig1.suptitle(("CLK Freq = %.0f Hz" % F_CLK), fontsize=12)
+    ax = fig1.add_subplot(111)
+    t = np.arange(DIOout.shape[0] )/F_CLK
+    for i in range(10):
+        ax.plot(t, DIOout[:,i]*0.5+i-0.25, '-')
+    ax.set_yticks(range(10))
+    ax.set_yticklabels(['Charge 1','Discharge 1','Charge 2','Discharge 2','Charge 3','Discharge 3',
+                        'Ground 1','Ground 2','Ground 3','Ground 4'])
+    ax.set_xlabel('Time (sec)')
+    plt.show()
 
 '''-------------------------------------------------------------------------------'''
 # Parameters
@@ -180,15 +207,7 @@ if __name__ == '__main__':
                 videoName = None
 
                 # Construct DAQ output
-                animation = np.array([
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1]
-                ])
-
-                animation = np.tile(animation, (10, 1))
-
-                DIOout = Animation2DIO(animation)
+                DIOout = dischargeAll(2.0) # (sec)
 
                 isIdle = True
             else:
@@ -208,12 +227,11 @@ if __name__ == '__main__':
 
                 actNode = 6  # Range from 0 to 11
 
+                DIOout = np.empty((0, Channel_Num), dtype=np.uint8)
+
                 oneBlock = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
                                                  CHARGE_XY[actNode][1], yi) for yi in tactileSig], dtype=np.uint8)
-                oneBlock = oneBlock.reshape((-1, Channel_Num))
-
-                DIOout = np.empty((0, Channel_Num), dtype=np.uint8)
-                DIOout = np.append(DIOout, oneBlock, axis=0)
+                DIOout = np.append(DIOout, oneBlock.reshape((-1, Channel_Num)), axis=0)
                 for discharge_i in [1, 3, 5]: # Discharge for 0.2 second
                     dischargeBlock = np.zeros((int(0.2 * F_CLK), Channel_Num), dtype=np.uint8)
                     dischargeBlock[:, [discharge_i, 6, 7, 8, 9]] = 1
@@ -392,7 +410,6 @@ if __name__ == '__main__':
             else:
                 button4.setFillColor([0, 0, 0])
 
-
             if mouse0.isPressedIn(button5, buttons=[0]): # ---------------------------------------------- Button 5: Frog
                 # GUI update
                 button5.setFillColor([-0.8, -0.8, -0.8])
@@ -403,12 +420,52 @@ if __name__ == '__main__':
 
                 # Construct DAQ output
                 animation = np.array([
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1]
+                    [1, 0, 1, 1,
+                     0, 0, 0, 1,
+                     0, 0, 1, 1],
                 ])
+                DIOout = Animation2DIO(animation, frameChargeRepNum=800, frameDischargeRepNum=1000)
 
-                DIOout = Animation2DIO(animation, frameChargeRepNum=720, frameDischargeRepNum=800)
+                ySig = sinSignal(sinDuration=1.6, sinFreq=5)
+                actNode = 5  # Range from 0 to 11
+                NodeA = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
+                                                 CHARGE_XY[actNode][1], yi) for yi in ySig], dtype=np.uint8)
+
+                actNode = 6  # Range from 0 to 11
+                NodeB = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
+                                              CHARGE_XY[actNode][1], yi) for yi in ySig], dtype=np.uint8)
+                oneBlock = np.bitwise_or(NodeA, NodeB) # Extremely danger operation! Two nodes must be aligned
+                DIOout = np.append(DIOout, oneBlock.reshape((-1, Channel_Num)), axis=0)
+
+                DIOout = np.append(DIOout, dischargeAll(0.2), axis=0)
+
+                ySig = sinSignal(sinDuration=4.0, sinFreq=5)
+                actNode = 6  # Range from 0 to 11
+                NodeA = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
+                                                 CHARGE_XY[actNode][1], yi) for yi in ySig], dtype=np.uint8)
+
+                actNode = 7  # Range from 0 to 11
+                NodeB = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
+                                              CHARGE_XY[actNode][1], yi) for yi in ySig], dtype=np.uint8)
+                oneBlock = np.bitwise_or(NodeA, NodeB) # Extremely danger operation! Two nodes must be aligned
+                DIOout = np.append(DIOout, oneBlock.reshape((-1, Channel_Num)), axis=0)
+
+                DIOout = np.append(DIOout, dischargeAll(0.2), axis=0)
+
+                animation = np.array([
+                    [0, 0, 0, 0,
+                     1, 0, 0, 0,
+                     1, 0, 0, 0],
+                    [1, 1, 0, 0,
+                     0, 1, 0, 0,
+                     1, 0, 0, 0],
+                    [0, 1, 1, 0,
+                     0, 1, 0, 0,
+                     0, 0, 0, 0],
+                ])
+                DIOout = np.append(DIOout, Animation2DIO(animation, frameChargeRepNum=800, frameDischargeRepNum=1000), axis=0)
+
+                DIOout = np.append(DIOout, dischargeAll(1.0), axis=0)
 
                 isIdle = True
             else:
@@ -435,6 +492,8 @@ if __name__ == '__main__':
                 print("DIOout Shape: ", DIOout.shape)
                 measureTime = (DIOoutLen / F_CLK)
                 print("Total time = %.3f sec" % measureTime)
+
+                #checkOutput(DIOout) # Debug tool
 
                 # Play video using external media player
                 if(videoName):
