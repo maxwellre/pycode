@@ -159,9 +159,9 @@ else: # DC activation signal for each frame
     # 0, 0, 0, 1,
     # 0, 0, 0, 0],
     #
-    # [0, 0, 1, 0,
+    # [1, 0, 0, 0,
     # 0, 0, 0, 0,
-    # 0, 0, 0, 0],
+    # 0, 0, 0, 1],
     #
     # [-1, -1, -1, -1,
     # -1, -1, -1, -1,
@@ -170,7 +170,7 @@ else: # DC activation signal for each frame
 
     #---------------------------------------------
 
-    animation = np.tile(animation, (10, 1))
+    # animation = np.tile(animation, (10, 1))
 
     frameNum = animation.shape[0]
 

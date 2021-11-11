@@ -66,7 +66,7 @@ button4 = pv.Rect(window0, pos=[-0.4, -0.20], width=0.5, height=0.1, fillColor=[
 button4Text = pv.TextStim(window0, pos=button4.pos, text='Clip: Ocean Waves', height=0.05)
 
 button5 = pv.Rect(window0, pos=[-0.4, -0.36], width=0.5, height=0.1, fillColor=[0, 0, 0],
-                      lineWidth=1, lineColor='red')
+                      lineWidth=1, lineColor='white')
 button5Text = pv.TextStim(window0, pos=button5.pos, text='Movie: Frog', height=0.05)
 
 # Haptic screen monitor
@@ -99,17 +99,21 @@ def refreshWindow():
 
     window0.flip()
 
-def Percent2PWM(CLKnum, pinCharge, pinDischarge, pinGND, percentage = 0.0):
-    PWMratioInd = int(percentage * 0.01 * CLKnum)
-
-    if(PWMratioInd < 0):
-        PWMratioInd = 0
-
+def Percent2PWM(CLKnum, pinCharge, pinDischarge, pinGND, percentage = np.NAN):
     PWMout = np.zeros((CLKnum, Channel_Num), dtype=np.uint8)
+
+    if (np.isnan(percentage)): # No output
+        return PWMout
+
+    PWMratioInd = int(percentage * 0.01 * CLKnum)-1
+    if (PWMratioInd < 0):
+        PWMratioInd = 0
+    elif (PWMratioInd >= CLKnum-1):
+        PWMratioInd = CLKnum-2
 
     PWMout[:PWMratioInd, pinCharge] = 1 # Charge cycle
 
-    PWMout[(PWMratioInd+1):, pinDischarge] = 1 # Discharge cycle, must skip 1 tick for safety
+    PWMout[(PWMratioInd+1):-1, pinDischarge] = 1 # Discharge cycle, must skip 1 tick for safety
 
     PWMout[:, pinGND] = 1  # GND
 
@@ -326,85 +330,44 @@ if __name__ == '__main__':
                 videoName = "Sea.mp4"
 
                 # Construct DAQ output
+                # Construct DAQ output
                 animation = np.array([
                     [0, 0, 0, 0,
-                     0, 0, 0, 0,
+                     0, 1, 1, 0,
                      0, 0, 0, 0],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [0, 0, 0, 1,
-                     0, 0, 0, 0,
-                     0, 0, 0, 1],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [0, 0, 1, 0,
-                     0, 0, 0, 0,
-                     0, 0, 1, 0],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [0, 1, 0, 0,
-                     0, 0, 0, 0,
-                     0, 1, 0, 0],
                     [-1, -1, -1, -1,
                      -1, -1, -1, -1,
                      -1, -1, -1, -1],
                     [1, 0, 0, 0,
                      1, 0, 0, 0,
-                     1, 0, 0, 0],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [0, 0, 0, 0,
-                     0, 0, 0, 0,
-                     0, 0, 0, 0],
-                    [0, 0, 0, 0,
-                     0, 0, 0, 0,
-                     0, 0, 0, 0],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [0, 0, 0, 0,
-                     0, 0, 0, 0,
-                     0, 0, 0, 1],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [0, 0, 0, 0,
-                     0, 0, 0, 1,
-                     0, 0, 1, 0],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [0, 0, 0, 1,
-                     0, 0, 1, 0,
-                     0, 1, 0, 0],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [0, 0, 0, 1,
-                     0, 1, 0, 0,
-                     1, 0, 0, 0],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [0, 1, 0, 0,
-                     1, 0, 0, 0,
-                     0, 0, 0, 0],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [0, 0, 0, 0,
-                     0, 0, 0, 0,
-                     0, 0, 0, 0],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1]
+                     1, 0, 0, 0]
                 ])
+                DIOout = Animation2DIO(animation, frameChargeRepNum=400, frameDischargeRepNum=420)
 
-                DIOout = Animation2DIO(animation, frameChargeRepNum=800, frameDischargeRepNum=3500)
+                DIOout = np.append(DIOout, dischargeAll(1.0), axis=0)  # Discharge all nodes
+
+                ySig = sinSignal(sinDuration=18, sinFreq=0.3)
+                ySigA = ySig.copy()
+                ySigA[0::2] = np.NAN
+                ySigB = ySig.copy()
+                ySigB = 100 - ySigB
+                ySigB[1::2] = np.NAN
+
+                ySigA = np.power(ySigA*0.01, 1.6) * 100
+                ySigB = np.power(ySigB*0.01, 1.6) * 100
+                # plt.plot(ySigA);plt.plot(ySigB);plt.show()
+
+                actNode = 7  # Range from 0 to 11
+                NodeA = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
+                                                 CHARGE_XY[actNode][1], yi) for yi in ySigA], dtype=np.uint8)
+                actNode = 0  # Range from 0 to 11
+                NodeB = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
+                                              CHARGE_XY[actNode][1], yi) for yi in ySigB], dtype=np.uint8)
+
+                oneBlock = np.bitwise_or(NodeA, NodeB)  # Extremely danger operation! Two nodes must be aligned
+                DIOout = np.append(DIOout, oneBlock.reshape((-1, Channel_Num)), axis=0)
+
+                DIOout = np.append(DIOout, dischargeAll(2.0), axis=0)  # Discharge all nodes
 
                 isIdle = True
             else:
@@ -427,17 +390,13 @@ if __name__ == '__main__':
                 DIOout = Animation2DIO(animation, frameChargeRepNum=800, frameDischargeRepNum=1000)
 
                 ySig = sinSignal(sinDuration=1.6, sinFreq=5)
-                actNode = 5  # Range from 0 to 11
-                NodeA = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
-                                                 CHARGE_XY[actNode][1], yi) for yi in ySig], dtype=np.uint8)
 
                 actNode = 6  # Range from 0 to 11
-                NodeB = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
+                oneBlock = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
                                               CHARGE_XY[actNode][1], yi) for yi in ySig], dtype=np.uint8)
-                oneBlock = np.bitwise_or(NodeA, NodeB) # Extremely danger operation! Two nodes must be aligned
                 DIOout = np.append(DIOout, oneBlock.reshape((-1, Channel_Num)), axis=0)
 
-                DIOout = np.append(DIOout, dischargeAll(0.2), axis=0)
+                DIOout = np.append(DIOout, dischargeAll(0.2), axis=0) # Discharge all nodes
 
                 ySig = sinSignal(sinDuration=4.0, sinFreq=5)
                 actNode = 6  # Range from 0 to 11
@@ -450,22 +409,67 @@ if __name__ == '__main__':
                 oneBlock = np.bitwise_or(NodeA, NodeB) # Extremely danger operation! Two nodes must be aligned
                 DIOout = np.append(DIOout, oneBlock.reshape((-1, Channel_Num)), axis=0)
 
-                DIOout = np.append(DIOout, dischargeAll(0.2), axis=0)
+                DIOout = np.append(DIOout, dischargeAll(0.2), axis=0) # Discharge all nodes
 
                 animation = np.array([
                     [0, 0, 0, 0,
                      1, 0, 0, 0,
                      1, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
                     [1, 1, 0, 0,
                      0, 1, 0, 0,
                      1, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
                     [0, 1, 1, 0,
                      0, 1, 0, 0,
+                     0, 0, 0, 0]
+                ])
+                DIOout = np.append(DIOout, Animation2DIO(animation, frameChargeRepNum=800, frameDischargeRepNum=1600), axis=0)
+
+                DIOout = np.append(DIOout, dischargeAll(0.2), axis=0) # Discharge all nodes
+
+                animation = np.array([
+                    [0, 1, 1, 0,
+                     1, 0, 0, 1,
+                     0, 0, 0, 1],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 0,
+                     0, 0, 0, 0,
+                     0, 1, 1, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 0,
+                     0, 0, 0, 0,
+                     1, 1, 1, 1],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 0,
+                     0, 1, 1, 0,
+                     1, 1, 1, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 0, 0, 0,
+                     1, 1, 1, 0,
+                     0, 0, 0, 0],
+                    [-1, -1, -1, -1,
+                     -1, -1, -1, -1,
+                     -1, -1, -1, -1],
+                    [0, 1, 1, 0,
+                     0, 0, 0, 0,
                      0, 0, 0, 0],
                 ])
-                DIOout = np.append(DIOout, Animation2DIO(animation, frameChargeRepNum=800, frameDischargeRepNum=1000), axis=0)
+                DIOout = np.append(DIOout, Animation2DIO(animation, frameChargeRepNum=800, frameDischargeRepNum=2000), axis=0)
 
-                DIOout = np.append(DIOout, dischargeAll(1.0), axis=0)
+                DIOout = np.append(DIOout, dischargeAll(1.0), axis=0) # Discharge all nodes at the end
 
                 isIdle = True
             else:
@@ -493,7 +497,7 @@ if __name__ == '__main__':
                 measureTime = (DIOoutLen / F_CLK)
                 print("Total time = %.3f sec" % measureTime)
 
-                #checkOutput(DIOout) # Debug tool
+                # checkOutput(DIOout) # Debug tool
 
                 # Play video using external media player
                 if(videoName):
