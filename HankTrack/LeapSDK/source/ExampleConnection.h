@@ -13,6 +13,7 @@ LEAP_CONNECTION* OpenConnection();
 void CloseConnection();
 void DestroyConnection();
 LEAP_TRACKING_EVENT* GetFrame(); //Used in polling example
+void getOneFrame(); // Customized function for bridging with cpython
 LEAP_DEVICE_INFO* GetDeviceProperties(); //Used in polling example
 const char* ResultString(eLeapRS r);
 

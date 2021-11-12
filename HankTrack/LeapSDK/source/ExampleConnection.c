@@ -32,6 +32,8 @@ static void setDevice(const LEAP_DEVICE_INFO *deviceProps);
 //External state
 bool IsConnected = false;
 
+int64_t lastFrameID = 0; //The last frame received
+
 //Internal state
 static volatile bool _isRunning = false;
 static LEAP_CONNECTION connectionHandle = NULL;
@@ -340,12 +342,37 @@ LEAP_TRACKING_EVENT* GetFrame(){
   return currentFrame;
 }
 
-void getOneFrame(LEAP_TRACKING_EVENT currentFrame){
-      LockMutex(&dataLock);
-      currentFrame = *lastFrame;
-      UnlockMutex(&dataLock);
+void getOneFrame(){
+    LEAP_TRACKING_EVENT *frame = GetFrame();
+    if(frame && (frame->tracking_frame_id > lastFrameID)){
+      lastFrameID = frame->tracking_frame_id;
+      printf("Frame %lli with %i hands.\n", (long long int)frame->tracking_frame_id, frame->nHands);
+
+    LEAP_HAND* hand = &frame->pHands[(frame->nHands) - 1];
+
+    hand->palm.position.x
+    hand->palm.position.y
+    hand->palm.position.z
+
+//    hand->digits.thumb.position.x
+//    hand->digits.thumb.position.y
+//    hand->digits.thumb.position.z
+
+    hand->arm.position.x
+    hand->arm.position.y
+    hand->arm.position.z
+
+    }
 }
 
+//      for(uint32_t h = 0; h < frame->nHands; h++){
+//        LEAP_HAND* hand = &frame->pHands[h];
+//        printf("    Hand id %i is a %s hand with position (%f, %f, %f).\n",
+//                    hand->id,
+//                    (hand->type == eLeapHandType_Left ? "left" : "right"),
+//                    hand->palm.position.x,
+//                    hand->palm.position.y,
+//                    hand->palm.position.z);}
 /**
  * Caches the last device found by copying the device info struct returned by
  * LeapC.

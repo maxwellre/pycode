@@ -29,5 +29,4 @@ if __name__ == '__main__':
     oneFrame = LEAP_TRACKING_EVENT()
 
     while True:
-        leapc_lib.getOneFrame(ctypes.byref(oneFrame))
-        print(oneFrame.nHands)
+        leapc_lib.getOneFrame()
