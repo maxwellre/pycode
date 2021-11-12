@@ -11,4 +11,10 @@
 *.wav
 *.mp4
 *.gif
+*.cmake
 temp
+
+CMakeFiles/
+include/
+lib/
+
