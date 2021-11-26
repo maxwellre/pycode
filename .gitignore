@@ -4,6 +4,7 @@
 *.png
 *.idea
 *.txt
+!Calibration20210802.txt
 *.avi
 *.tdms
 *.tdms_index
