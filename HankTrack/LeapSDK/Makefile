@@ -47,19 +47,19 @@ cmake_force:
 SHELL = cmd.exe
 
 # The CMake executable.
-CMAKE_COMMAND = C:\Users\ytshao\Downloads\cmake-3.22.0-rc2-windows-x86_64\bin\cmake.exe
+CMAKE_COMMAND = "C:\Program Files\CMake\bin\cmake.exe"
 
 # The command to remove a file.
-RM = C:\Users\ytshao\Downloads\cmake-3.22.0-rc2-windows-x86_64\bin\cmake.exe -E rm -f
+RM = "C:\Program Files\CMake\bin\cmake.exe" -E rm -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = C:\Users\ytshao\JupyterNote\HankTrack\LeapSDK\source
+CMAKE_SOURCE_DIR = C:\PersonalGitPyCode\HankTrack\LeapSDK\source
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = C:\Users\ytshao\JupyterNote\HankTrack\LeapSDK
+CMAKE_BINARY_DIR = C:\PersonalGitPyCode\HankTrack\LeapSDK
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -67,7 +67,7 @@ CMAKE_BINARY_DIR = C:\Users\ytshao\JupyterNote\HankTrack\LeapSDK
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	C:\Users\ytshao\Downloads\cmake-3.22.0-rc2-windows-x86_64\bin\cmake-gui.exe -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	"C:\Program Files\CMake\bin\cmake-gui.exe" -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -77,7 +77,7 @@ edit_cache/fast: edit_cache
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	C:\Users\ytshao\Downloads\cmake-3.22.0-rc2-windows-x86_64\bin\cmake.exe --regenerate-during-build -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	"C:\Program Files\CMake\bin\cmake.exe" --regenerate-during-build -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -86,9 +86,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start C:\Users\ytshao\JupyterNote\HankTrack\LeapSDK\CMakeFiles C:\Users\ytshao\JupyterNote\HankTrack\LeapSDK\\CMakeFiles\progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\PersonalGitPyCode\HankTrack\LeapSDK\CMakeFiles C:\PersonalGitPyCode\HankTrack\LeapSDK\\CMakeFiles\progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start C:\Users\ytshao\JupyterNote\HankTrack\LeapSDK\CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\PersonalGitPyCode\HankTrack\LeapSDK\CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -128,29 +128,29 @@ ExampleConnection/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExampleConnection.dir\build.make CMakeFiles/ExampleConnection.dir/build
 .PHONY : ExampleConnection/fast
 
-ExampleConnection.obj: ExampleConnection.c.obj
-.PHONY : ExampleConnection.obj
+libExampleConnection.obj: libExampleConnection.c.obj
+.PHONY : libExampleConnection.obj
 
 # target to build an object file
-ExampleConnection.c.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExampleConnection.dir\build.make CMakeFiles/ExampleConnection.dir/ExampleConnection.c.obj
-.PHONY : ExampleConnection.c.obj
+libExampleConnection.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExampleConnection.dir\build.make CMakeFiles/ExampleConnection.dir/libExampleConnection.c.obj
+.PHONY : libExampleConnection.c.obj
 
-ExampleConnection.i: ExampleConnection.c.i
-.PHONY : ExampleConnection.i
+libExampleConnection.i: libExampleConnection.c.i
+.PHONY : libExampleConnection.i
 
 # target to preprocess a source file
-ExampleConnection.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExampleConnection.dir\build.make CMakeFiles/ExampleConnection.dir/ExampleConnection.c.i
-.PHONY : ExampleConnection.c.i
+libExampleConnection.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExampleConnection.dir\build.make CMakeFiles/ExampleConnection.dir/libExampleConnection.c.i
+.PHONY : libExampleConnection.c.i
 
-ExampleConnection.s: ExampleConnection.c.s
-.PHONY : ExampleConnection.s
+libExampleConnection.s: libExampleConnection.c.s
+.PHONY : libExampleConnection.s
 
 # target to generate assembly for a file
-ExampleConnection.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExampleConnection.dir\build.make CMakeFiles/ExampleConnection.dir/ExampleConnection.c.s
-.PHONY : ExampleConnection.c.s
+libExampleConnection.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ExampleConnection.dir\build.make CMakeFiles/ExampleConnection.dir/libExampleConnection.c.s
+.PHONY : libExampleConnection.c.s
 
 # Help Target
 help:
@@ -161,9 +161,9 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... ExampleConnection
-	@echo ... ExampleConnection.obj
-	@echo ... ExampleConnection.i
-	@echo ... ExampleConnection.s
+	@echo ... libExampleConnection.obj
+	@echo ... libExampleConnection.i
+	@echo ... libExampleConnection.s
 .PHONY : help
 
 

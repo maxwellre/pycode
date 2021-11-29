@@ -3,8 +3,8 @@
  * <RELEASE-SPECIFIC-EULA>
  */
 
-#ifndef ExampleConnection_h
-#define ExampleConnection_h
+#ifndef libExampleConnection_h
+#define libExampleConnection_h
 
 #include "LeapC.h"
 
@@ -13,7 +13,6 @@ LEAP_CONNECTION* OpenConnection();
 void CloseConnection();
 void DestroyConnection();
 LEAP_TRACKING_EVENT* GetFrame(); //Used in polling example
-void getOneFrame(); // Customized function for bridging with cpython
 LEAP_DEVICE_INFO* GetDeviceProperties(); //Used in polling example
 const char* ResultString(eLeapRS r);
 
@@ -54,4 +53,7 @@ struct Callbacks{
 };
 extern struct Callbacks ConnectionCallbacks;
 extern void millisleep(int milliseconds);
-#endif /* ExampleConnection_h */
+
+int getOneFrame(float trackdata[33]); // Customized function for bridging with cpython
+
+#endif /* libExampleConnection_h */
