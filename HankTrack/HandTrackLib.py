@@ -27,13 +27,18 @@ leapc_lib.getOneFrame.argtypes = [ctypes.POINTER(ctypes.c_float)] # Pass pointer
 leapc_lib.getOneFrame.restype = ctypes.c_int
 
 '''Functions'''
+def getTrackData():
+    onetrackData = np.zeros((33,), dtype=np.float32) # Warning: DO NOT modify the length of the array!
+
+    trackres = leapc_lib.getOneFrame(onetrackData.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
+
+    onetrackData = onetrackData.reshape((-1,3))
+
+    return onetrackData, trackres
+
 def animUpdate(frame_i, palmPoint, digit1DistalLine, digit2DistalLine, digit3DistalLine, digit4DistalLine,
                digit5DistalLine):
-    data1f = np.zeros((33,), dtype=np.float32) # Warning: DO NOT modify the length of the array!
-
-    trackres = leapc_lib.getOneFrame(data1f.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
-
-    data1f = data1f.reshape((-1,3))
+    data1f, trackres = getTrackData()
 
     if(trackres == 1):
         #print("Frame = %d" % frame_i); print(data1f)
