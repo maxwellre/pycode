@@ -14,6 +14,7 @@
 *.gif
 *.cmake
 temp
+__pycache__
 
 CMakeFiles/
 include/

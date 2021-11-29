@@ -178,17 +178,34 @@ if __name__ == '__main__':
             message1.text = "Calibration finished"
             print(cornerLoc)
 
+            # Cumulative correction of the calibration
             if cornerLocCum is None:
                 cornerLocCum = cornerLoc
             else:
                 cornerLocCum = 0.8*cornerLocCum + 0.2*cornerLoc
 
+            # Compute plane norm vector
             planeNorm = np.matmul(np.linalg.inv(cornerLocCum[:3,:]), np.ones((3,1)))
             print(planeNorm)
             calibScore = np.matmul(cornerLocCum[3,:], planeNorm)
             print("Calibration score = %f" % calibScore)
 
-            # Update tracking animation
+            ampXY = np.sqrt(planeNorm[0]**2 + planeNorm[1]**2)
+            rotXY = np.array([[planeNorm[1]/ampXY, -planeNorm[0]/ampXY, 0],
+                             [planeNorm[0]/ampXY, planeNorm[1]/ampXY, 0],
+                             [0, 0, 1]])
+            ampXYZ = np.sqrt(planeNorm[0]**2 + planeNorm[1]**2 + planeNorm[2]**2)
+            rotYZ = np.array([[1, 0, 0],
+                             [0, planeNorm[2]/ampXYZ, -ampXY/ampXYZ],
+                             [0, ampXY/ampXYZ, planeNorm[2]/ampXYZ]])
+
+            mapRot = np.matmul(rotYZ, rotXY)
+
+            cornerLocCum = cornerLocCum - cornerLocCum[0,:] # Shifted to origin
+            cornerLocCum2 = cornerLocCum.copy()
+            cornerLocCum = np.matmul(cornerLocCum, mapRot.T)
+
+            # Update the base plane in tracking animation
             planeLine0.set_data(cornerLocCum[[0, 1], 0], cornerLocCum[[0, 1], 1])
             planeLine0.set_3d_properties(cornerLocCum[[0,1], 2])
             planeLine1.set_data(cornerLocCum[[1, 2], 0], cornerLocCum[[1, 2], 1])
@@ -197,6 +214,18 @@ if __name__ == '__main__':
             planeLine2.set_3d_properties(cornerLocCum[[2, 3], 2])
             planeLine3.set_data(cornerLocCum[[0, 3], 0], cornerLocCum[[0, 3], 1])
             planeLine3.set_3d_properties(cornerLocCum[[0, 3], 2])
+
+            cornerLocCum2 = np.matmul(cornerLocCum2, rotXY.T)
+            ax.plot(cornerLocCum2[[0, 1], 0], cornerLocCum2[[0, 1], 1], cornerLocCum2[[0, 1], 2], '-', c='y')[0]
+            ax.plot(cornerLocCum2[[1, 2], 0], cornerLocCum2[[1, 2], 1], cornerLocCum2[[1, 2], 2], '-', c='y')[0]
+            ax.plot(cornerLocCum2[[2, 3], 0], cornerLocCum2[[2, 3], 1], cornerLocCum2[[2, 3], 2], '-', c='y')[0]
+            ax.plot(cornerLocCum2[[0, 3], 0], cornerLocCum2[[0, 3], 1], cornerLocCum2[[0, 3], 2], '-', c='y')[0]
+            cornerLocCum2 = np.matmul(cornerLocCum2, rotYZ.T)
+            ax.plot(cornerLocCum2[[0, 1], 0], cornerLocCum2[[0, 1], 1], cornerLocCum2[[0, 1], 2], '-', c='r')[0]
+            ax.plot(cornerLocCum2[[1, 2], 0], cornerLocCum2[[1, 2], 1], cornerLocCum2[[1, 2], 2], '-', c='r')[0]
+            ax.plot(cornerLocCum2[[2, 3], 0], cornerLocCum2[[2, 3], 1], cornerLocCum2[[2, 3], 2], '-', c='r')[0]
+            ax.plot(cornerLocCum2[[0, 3], 0], cornerLocCum2[[0, 3], 1], cornerLocCum2[[0, 3], 2], '-', c='r')[0]
+            print(cornerLocCum); print(cornerLocCum2)
 
         else:
             button1.setFillColor(LIGHT_BLUE)
