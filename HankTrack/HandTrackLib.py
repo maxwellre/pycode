@@ -14,6 +14,10 @@ DIGIT3_DISTAL = [5,6]
 DIGIT4_DISTAL = [7,8]
 DIGIT5_DISTAL = [9,10]
 
+'''Configration'''
+transCoordinate = True
+calibrationFilePath = './CalibrationFile/Calibration_at21-12-37.csv'
+
 '''Import LeapC libraray'''
 sdkPath = path.join(path.dirname(__file__), 'LeapSDK')
 
@@ -43,6 +47,10 @@ def animUpdate(frame_i, palmPoint, digit1DistalLine, digit2DistalLine, digit3Dis
     if(trackres == 1):
         #print("Frame = %d" % frame_i); print(data1f)
 
+        if transCoordinate:
+            data1f = data1f - offSet
+            data1f = np.matmul(data1f, mapRot)
+
         palmPoint.set_data(data1f[PALM_POSI,:2])
         palmPoint.set_3d_properties(data1f[PALM_POSI,2])
 
@@ -63,6 +71,13 @@ def animUpdate(frame_i, palmPoint, digit1DistalLine, digit2DistalLine, digit3Dis
 
 '''------------------------------------------------------------------------------------------------------------------'''
 dispRange = [-100, -100, -100, 400, 200, 400]
+if transCoordinate:
+    dispRange = [100, -100, -10, -400, 400, 300]
+
+    calibData = np.genfromtxt(calibrationFilePath, delimiter=',')
+    print(calibData)
+    mapRot = np.matmul(calibData[:3,:], [[-1,0,0],[0,1,0],[0,0,-1]]) # Need to rotate 180 around Y axis
+    offSet = calibData[3,:]
 
 if __name__ == '__main__':
     leapc_lib.OpenConnection()
@@ -76,6 +91,14 @@ if __name__ == '__main__':
     digit3DistalLine = ax.plot([], [], [], '-', c='b')[0]
     digit4DistalLine = ax.plot([], [], [], '-', c='b')[0]
     digit5DistalLine = ax.plot([], [], [], '-', c='b')[0]
+
+    if transCoordinate:
+        cornerLocTrans = calibData[3:,:] - offSet  # Shifted to origin
+        cornerLocTrans = np.matmul(cornerLocTrans, mapRot)
+        ax.plot(cornerLocTrans[[0, 1], 0], cornerLocTrans[[0, 1], 1], cornerLocTrans[[0, 1], 2], '-', c='k')
+        ax.plot(cornerLocTrans[[1, 2], 0], cornerLocTrans[[1, 2], 1], cornerLocTrans[[1, 2], 2], '-', c='k')
+        ax.plot(cornerLocTrans[[2, 3], 0], cornerLocTrans[[2, 3], 1], cornerLocTrans[[2, 3], 2], '-', c='k')
+        ax.plot(cornerLocTrans[[0, 3], 0], cornerLocTrans[[0, 3], 1], cornerLocTrans[[0, 3], 2], '-', c='k')
 
     ax.set_xlabel('X (mm)')
     ax.set_ylabel('Y (mm)')

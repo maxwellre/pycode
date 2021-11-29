@@ -119,12 +119,6 @@ if __name__ == '__main__':
     digit4DistalLine = ax.plot([], [], [], '-', c='b')[0]
     digit5DistalLine = ax.plot([], [], [], '-', c='b')[0]
 
-    # Draw rectangle to indicate the base plane
-    planeLine0 = ax.plot([], [], [],'-', c='g')[0]
-    planeLine1 = ax.plot([], [], [], '-', c='g')[0]
-    planeLine2 = ax.plot([], [], [], '-', c='g')[0]
-    planeLine3 = ax.plot([], [], [], '-', c='g')[0]
-
     ax.set_xlabel('X (mm)')
     ax.set_ylabel('Y (mm)')
     ax.set_zlabel('Z (mm)')
@@ -175,8 +169,7 @@ if __name__ == '__main__':
                 cornerLoc[i,:] = data1f[DIGIT2_DISTAL[1], :]
                 plt.pause(0.5)
 
-            message1.text = "Calibration finished"
-            print(cornerLoc)
+            print(cornerLoc) # Show the tracked location of the corners
 
             # Cumulative correction of the calibration
             if cornerLocCum is None:
@@ -184,48 +177,17 @@ if __name__ == '__main__':
             else:
                 cornerLocCum = 0.8*cornerLocCum + 0.2*cornerLoc
 
-            # Compute plane norm vector
-            planeNorm = np.matmul(np.linalg.inv(cornerLocCum[:3,:]), np.ones((3,1)))
-            print(planeNorm)
-            calibScore = np.matmul(cornerLocCum[3,:], planeNorm)
-            print("Calibration score = %f" % calibScore)
+            # Compute plane norm vector ---
+            planeNorm = np.matmul(np.linalg.inv(cornerLocCum[:3, :]), np.ones((3, 1)))
+            calibScore = np.matmul(cornerLocCum[3, :], planeNorm)
 
-            ampXY = np.sqrt(planeNorm[0]**2 + planeNorm[1]**2)
-            rotXY = np.array([[planeNorm[1]/ampXY, -planeNorm[0]/ampXY, 0],
-                             [planeNorm[0]/ampXY, planeNorm[1]/ampXY, 0],
-                             [0, 0, 1]])
-            ampXYZ = np.sqrt(planeNorm[0]**2 + planeNorm[1]**2 + planeNorm[2]**2)
-            rotYZ = np.array([[1, 0, 0],
-                             [0, planeNorm[2]/ampXYZ, -ampXY/ampXYZ],
-                             [0, ampXY/ampXYZ, planeNorm[2]/ampXYZ]])
+            message1.text = "Calibration score = %.6f" % calibScore
+            print(message1.text)
 
-            mapRot = np.matmul(rotYZ, rotXY)
-
-            cornerLocCum = cornerLocCum - cornerLocCum[0,:] # Shifted to origin
-            cornerLocCum2 = cornerLocCum.copy()
-            cornerLocCum = np.matmul(cornerLocCum, mapRot.T)
-
-            # Update the base plane in tracking animation
-            planeLine0.set_data(cornerLocCum[[0, 1], 0], cornerLocCum[[0, 1], 1])
-            planeLine0.set_3d_properties(cornerLocCum[[0,1], 2])
-            planeLine1.set_data(cornerLocCum[[1, 2], 0], cornerLocCum[[1, 2], 1])
-            planeLine1.set_3d_properties(cornerLocCum[[1, 2], 2])
-            planeLine2.set_data(cornerLocCum[[2, 3], 0], cornerLocCum[[2, 3], 1])
-            planeLine2.set_3d_properties(cornerLocCum[[2, 3], 2])
-            planeLine3.set_data(cornerLocCum[[0, 3], 0], cornerLocCum[[0, 3], 1])
-            planeLine3.set_3d_properties(cornerLocCum[[0, 3], 2])
-
-            cornerLocCum2 = np.matmul(cornerLocCum2, rotXY.T)
-            ax.plot(cornerLocCum2[[0, 1], 0], cornerLocCum2[[0, 1], 1], cornerLocCum2[[0, 1], 2], '-', c='y')[0]
-            ax.plot(cornerLocCum2[[1, 2], 0], cornerLocCum2[[1, 2], 1], cornerLocCum2[[1, 2], 2], '-', c='y')[0]
-            ax.plot(cornerLocCum2[[2, 3], 0], cornerLocCum2[[2, 3], 1], cornerLocCum2[[2, 3], 2], '-', c='y')[0]
-            ax.plot(cornerLocCum2[[0, 3], 0], cornerLocCum2[[0, 3], 1], cornerLocCum2[[0, 3], 2], '-', c='y')[0]
-            cornerLocCum2 = np.matmul(cornerLocCum2, rotYZ.T)
-            ax.plot(cornerLocCum2[[0, 1], 0], cornerLocCum2[[0, 1], 1], cornerLocCum2[[0, 1], 2], '-', c='r')[0]
-            ax.plot(cornerLocCum2[[1, 2], 0], cornerLocCum2[[1, 2], 1], cornerLocCum2[[1, 2], 2], '-', c='r')[0]
-            ax.plot(cornerLocCum2[[2, 3], 0], cornerLocCum2[[2, 3], 1], cornerLocCum2[[2, 3], 2], '-', c='r')[0]
-            ax.plot(cornerLocCum2[[0, 3], 0], cornerLocCum2[[0, 3], 1], cornerLocCum2[[0, 3], 2], '-', c='r')[0]
-            print(cornerLocCum); print(cornerLocCum2)
+            ax.plot(cornerLocCum[[0, 1], 0], cornerLocCum[[0, 1], 1], cornerLocCum[[0, 1], 2], '-', c='y')[0]
+            ax.plot(cornerLocCum[[1, 2], 0], cornerLocCum[[1, 2], 1], cornerLocCum[[1, 2], 2], '-', c='y')[0]
+            ax.plot(cornerLocCum[[2, 3], 0], cornerLocCum[[2, 3], 1], cornerLocCum[[2, 3], 2], '-', c='y')[0]
+            ax.plot(cornerLocCum[[0, 3], 0], cornerLocCum[[0, 3], 1], cornerLocCum[[0, 3], 2], '-', c='y')[0]
 
         else:
             button1.setFillColor(LIGHT_BLUE)
@@ -233,8 +195,31 @@ if __name__ == '__main__':
         if mouse0.isPressedIn(button3, buttons=[0]):
             if cornerLocCum is not None:
                 button3.setFillColor(DARK_BLUE)
+
+                # Compute rotation matrix for coordinate transform ---
+                ampXY = np.sqrt(planeNorm[0] ** 2 + planeNorm[1] ** 2)
+                rotXY = np.array([[planeNorm[1] / ampXY, -planeNorm[0] / ampXY, 0],
+                                  [planeNorm[0] / ampXY, planeNorm[1] / ampXY, 0],
+                                  [0.0, 0.0, 1.0]])
+                ampXYZ = np.sqrt(planeNorm[0] ** 2 + planeNorm[1] ** 2 + planeNorm[2] ** 2)
+                rotYZ = np.array([[1.0, 0.0, 0.0],
+                                  [0, planeNorm[2] / ampXYZ, -ampXY / ampXYZ],
+                                  [0, ampXY / ampXYZ, planeNorm[2] / ampXYZ]])
+                mapRot = np.matmul(rotYZ, rotXY).T
+
+                # Visualize transformed plane ---
+                cornerLocTrans = cornerLocCum.copy()
+                cornerLocTrans = cornerLocTrans - cornerLocCum[0, :]  # Shifted to origin
+                cornerLocTrans = np.matmul(cornerLocTrans, mapRot)
+                ax.plot(cornerLocTrans[[0, 1], 0], cornerLocTrans[[0, 1], 1], cornerLocTrans[[0, 1], 2], '-', c='r')
+                ax.plot(cornerLocTrans[[1, 2], 0], cornerLocTrans[[1, 2], 1], cornerLocTrans[[1, 2], 2], '-', c='r')
+                ax.plot(cornerLocTrans[[2, 3], 0], cornerLocTrans[[2, 3], 1], cornerLocTrans[[2, 3], 2], '-', c='r')
+                ax.plot(cornerLocTrans[[0, 3], 0], cornerLocTrans[[0, 3], 1], cornerLocTrans[[0, 3], 2], '-', c='r')
+
                 currentTime = time.strftime("%H-%M-%S", time.localtime())
-                np.savetxt(("Calibration_at%s.csv" % currentTime), cornerLocCum, delimiter=",")
+                np.savetxt(("Calibration_at%s.csv" % currentTime), np.append(mapRot, cornerLocCum, axis=0),
+                           delimiter=",") # First 3 rows: Rotation matrix, Last 4 rows: Corner location with the 4th row as the transition vector
+
                 plt.pause(0.5)
                 print("Data saved on %s" % currentTime)
         else:
