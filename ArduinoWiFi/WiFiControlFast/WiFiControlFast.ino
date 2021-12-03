@@ -81,17 +81,17 @@ void loop() {
     while (client.connected()) {            // loop while the client's connected
       if (client.available()) { 
         /* ---------------- Receive a message ---------------- */
-        String msg = client.readStringUntil('\r'); // Note: Such method is much slower than read()
-        client.flush();
+        char msg = client.read(); // Faster way to communicate
+        //Serial.println(msg);
         /* ---------------- GUI Unconnected ---------------- */
-        if ((msg == "request-to-connect-high-voltage-controller") && !isConnected) {    
+        if ((msg == 'q') && !isConnected) {    
           client.println("high-voltage-controller-is-ready");
           isConnected = true;
         }
 
         /* ---------------- GUI Connected ---------------- */
         if (isConnected) { // Connection established, program starts
-          if (msg == "button1-both") { // ---------------- Button 1
+          if (msg == 'b') { // ---------------- Button 1
             //Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain);   
 
             float indiDuration = chargeDuration*0.2;
@@ -126,7 +126,7 @@ void loop() {
             client.println("command-received"); // Acknowledgement
           } /* ---------------- Botton 1 ---------------- */
           
-          else if (msg == "button2-left") { // ---------------- Button 2
+          else if (msg == 'l') { // ---------------- Button 2
             //Serial.print("Pressed button2 Left PWM = "); Serial.println(PWMGain);
 
             analogWrite(PWM0, PWMGain);
@@ -142,7 +142,7 @@ void loop() {
             client.println("command-received"); // Acknowledgement
           } /* ---------------- Botton 2 ---------------- */
           
-          else if (msg == "button3-right") { // ---------------- Button 3
+          else if (msg == 'r') { // ---------------- Button 3
             //Serial.print("Pressed button3 Right PWM = "); Serial.println(PWMGain);
 
             analogWrite(PWM2, PWMGain);
@@ -158,7 +158,7 @@ void loop() {
             client.println("command-received"); // Acknowledgement
           } /* ---------------- Botton 3 ---------------- */
           
-          else if (msg == "button4-set-voltage") { // ---------------- Button 4
+          else if (msg == 's') { // ---------------- Button 4
             client.println("command-received"); // Acknowledgement
             
             String msgValue = client.readStringUntil('\r');

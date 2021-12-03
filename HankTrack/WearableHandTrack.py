@@ -94,11 +94,12 @@ if __name__ == '__main__':
     sock0 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock0.connect((HOST, PORT))
     while not isHapDevConnected: # try to establish a WiFi connection
-        sock0.sendall(b'request-to-connect-high-voltage-controller') # "Handshake" protocol
+        #sock0.sendall(b'request-to-connect-high-voltage-controller') # Obsoleted "Handshake" protocol
+        sock0.sendall(b'q')  # "Handshake" protocol
         ans = sock0.recv(1024)
-        if ans.decode() == "high-voltage-controller-is-ready": # "Handshake" protocol matched
-            isHapDevConnected = True
-            print("Successful connection to high voltage controller")
+        #if ans.decode() == "high-voltage-controller-is-ready": # "Handshake" protocol matched
+        isHapDevConnected = True
+            #print("Successful connection to high voltage controller")
 
     # Establish connection with Leap-motion ---
     leapc_lib.OpenConnection()
@@ -123,8 +124,8 @@ if __name__ == '__main__':
 
         if mouse0.isPressedIn(button1, buttons=[0]): # Start button
             button1.setFillColor(DARK_BLUE)
-            command(sock0, 'button4-set-voltage', light1)
-            command(sock0, 'voltlevel=%03d-chargeT=%04d-dischargeT=%04d' % (100,500,100), light1)
+            command(sock0, 's', light1) # (Obsoleted protocol = 'button4-set-voltage')
+            command(sock0, 'voltlevel=%03d-chargeT=%04d-dischargeT=%04d' % (100,1000,250), light1)
         else:
             button1.setFillColor(LIGHT_BLUE)
 
@@ -143,8 +144,7 @@ if __name__ == '__main__':
             if (abs(fingertip[0] - targetLoc[0]) < 20.0) and (abs(fingertip[1] - targetLoc[1]) < 20.0) and \
                     (abs(fingertip[2] - targetLoc[2]) < 20.0):
 
-                # command(sock0, 'button1-both', light1); command(sock0, 'button3-right', light1)
-                command(sock0, 'button2-left', light1)
+                command(sock0, 'l', light1) # (Obsoleted protocol = 'button2-left')
 
         core.wait(0.01)  # pause
 
