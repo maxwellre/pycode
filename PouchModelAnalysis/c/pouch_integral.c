@@ -55,15 +55,24 @@ double sphereCorner(double s2, double f, double R2, double stepSize)
 
 /* Compute the volume of the triangle pouch through boolean substration method */
 /* Output unit: mm3 */
-double computeVol(double s, double f, double R, double h, double n, double stepSize)
+double computeVol(double s, double f, double R, double h, double n, double stepSize) // slower method
 {
 	double s2 = s*s;
 	double R2 = R*R;
 	double h2 = h*h;
+
+	double SideCornerV = sphereCorner(s2, sqrt(s2 - n*n), R2, stepSize);
+	
+	if (f < 0)
+	{
+		double frontCornerV = sphereCorner(s2, -f, R2, stepSize);
+		
+		printf("Front = %.3f mm3, Side = %.3f mm3\n", frontCornerV, SideCornerV);
+		
+		return (frontCornerV - 2*SideCornerV);
+	}
 	
 	double frontCornerV = sphereCorner(s2, f, R2, stepSize);
-	
-	double SideCornerV = sphereCorner(s2, sqrt(s2 - n*n), R2, stepSize);
 	
 	double upperSphereV = ( 2 * R2 * (R - h) + h * (h2 - R2) ) * M_PI/3;
 	
@@ -153,4 +162,49 @@ double computeRectCapa(double y0, double y1, double z0, double r, double w, doub
         }		
 	}
 	return (capa * M_EPSILON0 * w * 0.001); // Unit 'Farad/m * mm' converted to 'Farad' by 1/1000
+}
+
+/* [Obsoleted] Compute volume using slower double integral method */
+
+double computeVolSlow(double x0, double x1, double y0, double z0, double R, double m, double stepSize)
+{
+	double a = 0.0, b = 0.0, R2 = 0.0, c = 0.0, V = 0.0, Vi = 0.0; // y = ax + b, R2 = R square, V is the volume computed (half-triangle), Vi is used for parallel computing
+	
+	c = x1 - x0;
+	a = m/c;
+	b = a * -x0;
+	R2 = R*R;
+	
+	double stepSize2 = stepSize * stepSize;
+	
+	int iMax = (int)(c/stepSize); // Need integer index for parallel computing 
+	
+	//Assign maximum number of threads for parallel computing
+	int threadNum = omp_get_max_threads();
+	omp_set_num_threads(threadNum); 
+	printf("Start parallel computing: Assigned number of threads = %d\n", threadNum);
+	
+	#pragma omp parallel shared(V) private(Vi)
+	{		
+		#pragma omp for
+		for(int i = 0; i < iMax; i++) // OMP Alternative of: for(double x = x0; x < x1; x += stepSize)
+		{
+			double x = (double)i * stepSize + x0;
+			double y1 = a * x + b;
+			double temp = R2 - x*x; // Temp variable facilitates the computation
+			
+			for(double y = y0; y < y1; y += stepSize)
+			{
+				Vi += (sqrt(temp - y*y) - z0) * stepSize2;
+			}
+		}
+		
+		//printf("Thread %d: Vi = %f\n", omp_get_thread_num(), Vi); // For debug only
+		
+		#pragma omp critical
+        {
+			V += Vi;
+        }
+	}
+	return (2*V); // Note that only half of the volume is computed by the for-loop since the triangle pouch is symmetric about x-z plane
 }

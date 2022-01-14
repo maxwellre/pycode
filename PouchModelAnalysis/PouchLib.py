@@ -39,6 +39,10 @@ if(enableFastComputing):
                                     ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double]
             pouch_integral.computeRectCapa.restype = ctypes.c_double
             
+            pouch_integral.computeVolSlow.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, 
+                        ctypes.c_double, ctypes.c_double, ctypes.c_double]
+            pouch_integral.computeVolSlow.restype = ctypes.c_double
+            
             print("c shared library imported successfully!")
         except:
             print("c shared library unfounded, switch to normal python computing")
@@ -67,7 +71,7 @@ def fitPlane2Points(p1, p2, p3):
 def computeCornerVolume(s, f, R, intStepSize):
     # Compute the volume of a corner of a sphere cutted by two perpendicular planes
     # 's' - radius of top cutting circle
-    # 'f' - the distance between the center of front cutting circle to the center of the sphere
+    # 'f' - the distance between the center of front cutting circle to the center of the sphere, can be negative if beta > 45 degree
     # 'R' - radius of the sphere being cutted
     # 'intStepSize'- the resolution of the integral 
     a = np.arange(f**2, s**2, intStepSize)
@@ -104,9 +108,9 @@ class TrianglePouch:
     # 'meshDensity' - density of vertices of the mesh of the pouch
     # 'adPlotDensity' - density of vertices of additive plot
     # 'addAd' - construct additive plot 
-    # 'dispCurve' - Display curve or the full circle for additive plot
+    # 'dispCircle' - Display full circle for additive plot
     #  --------------------------------------------------------------------------------------------------------------------
-    def __init__(self, R = 50, c = 20, m = 34.641, meshDensity = 100, adPlotDensity = 100, addAd = False, dispCurve = True):
+    def __init__(self, R = 50, c = 20, m = 34.641, meshDensity = 100, adPlotDensity = 100, addAd = False, dispCircle = False):
         self.R = R
         self.c = c
         self.m = m
@@ -195,11 +199,9 @@ class TrianglePouch:
         x, y, z = data_cut(x, y, z, keepInd)
         
         self.triangle = np.stack((x, y, z - self.h)) # Vertex coordinate of the triangle pouch
-        if(self.triangle.size == 0):
-            sys.exit("Warning: Insufficient mesh density!")
                
         if(addAd):
-            self.__additiveLine(dispCurve)
+            self.__additiveLine(not dispCircle)
  
         ###print("Estimate Tri V = %.3f (mm3)" % np.sum(self.triangle[2,:] * self.dx * self.dy)) # Debug 
         
@@ -251,6 +253,9 @@ class TrianglePouch:
     
     # Private function for updating the coordinate of the mesh and lines
     def __updateCoordinate(self, movedx = 0, movedy = 0, movedz = 0):
+        if(self.triangle.size == 0):
+            sys.exit("Warning: Insufficient mesh density!")
+            
         self.triangle[0,:] += movedx
         self.triangle[1,:] += movedy
         self.triangle[2,:] += movedz
@@ -291,6 +296,9 @@ class TrianglePouch:
         self.cCenterY += movedy
            
     def transformPouch(self, x = 0, y = 0, z = 0, flip = False):
+        if(self.triangle.size == 0):
+            sys.exit("Warning: Insufficient mesh density!")
+            
         # Flip along the x axis
         if(flip):
             self.triangle[0,:] *= -1
@@ -326,6 +334,9 @@ class TrianglePouch:
         
                 
     def displayPouch(self, ax, dispAdditive = False):
+        if(self.triangle.size == 0):
+            sys.exit("Warning: Insufficient mesh density!")
+            
         ax.scatter3D(self.triangle[0,:], self.triangle[1,:], self.triangle[2,:], 
                  s = 1, edgecolor="k", facecolor=(0,0,0,0))
         
@@ -357,12 +368,18 @@ class TrianglePouch:
  
     def getVolume(self, intStepSize):   
         if(enableFastComputing):
+            #print("Fast compute volume = %f", pouch_integral.computeVol(self.s, self.f, self.R, self.h, self.n, intStepSize))
+            #print("2D Integral compute volume = %f", pouch_integral.computeVolSlow(-self.s, self.f, 0.0, self.h, self.R, self.m, intStepSize)) # Check error
             return pouch_integral.computeVol(self.s, self.f, self.R, self.h, self.n, intStepSize)
         
-        # Normal computing when fast computing is unavailable 
-        frontCornerVol = computeCornerVolume(self.s, self.f, self.R, intStepSize)
-
+        # Normal computing when fast computing is unavailable       
         sideCornerVol = computeCornerVolume(self.s, np.sqrt(self.s**2 - self.n**2), self.R, intStepSize)
+
+        if (self.f < 0): # Beta > 45 degree 
+            frontCornerVol = computeCornerVolume(self.s, -self.f, self.R, intStepSize)
+            return frontCornerVol - 2*sideCornerVol
+
+        frontCornerVol = computeCornerVolume(self.s, self.f, self.R, intStepSize)
 
         domeVol = ( 2 * self.R**2 * (self.R - self.h) + self.h * (self.h**2 - self.R**2) ) * np.pi/3
     
@@ -397,7 +414,7 @@ class TrianglePouch:
 '''----------------------------------------------------------------------------------------------------------------------'''
 
 class RectanglePouch:
-    def __init__(self, r = 10, w = 50, m = 0, meshDensity = 100, adPlotDensity = 100, addAd = False, dispCurve = True):
+    def __init__(self, r = 10, w = 50, m = 0, meshDensity = 100, adPlotDensity = 100, addAd = False, dispCircle = False):
         self.r = r
         self.w = w
         self.m = m
@@ -426,11 +443,9 @@ class RectanglePouch:
         keepInd = (z >= self.zCut)
         x, y, z = data_cut(x, y, z, keepInd)
         self.rectangle = np.stack((x, y, z - self.zCut))
-        if(self.rectangle.size == 0):
-            sys.exit("Warning: Insufficient mesh density!")
 
         if(addAd):
-            self.__additiveLine(dispCurve)
+            self.__additiveLine(not dispCircle)
             
         ###print("Estimate Rect V = %.3f (mm3)" % np.sum(self.rectangle[2,:] * self.dx * self.dy)) # Debug 
     
@@ -456,6 +471,9 @@ class RectanglePouch:
         
     
     def transformPouch(self, movedx = 0, movedy = 0, movedz = 0):
+        if(self.rectangle.size == 0):
+            sys.exit("Warning: Insufficient mesh density!")
+            
         self.rectangle[0,:] += movedx
         self.rectangle[1,:] += movedy
         self.rectangle[2,:] += movedz
@@ -481,6 +499,9 @@ class RectanglePouch:
             self.rightLine[2,:] += movedz
             
     def displayPouch(self, ax, dispAdditive = False):
+        if(self.rectangle.size == 0):
+            sys.exit("Warning: Insufficient mesh density!")
+            
         ax.scatter3D(self.rectangle[0,:], self.rectangle[1,:], self.rectangle[2,:], 
                          s = 1, edgecolor="k", facecolor=(0,0,0,0))
         
@@ -512,5 +533,5 @@ class RectanglePouch:
         shellFactor = l_s/epsilon_s
         fluidFactor = 1.0/epsilon_f
         
-        return pouch_integral.computeTriCapa(0.0, self.m, self.zCut, self.r, self.w, shellFactor, fluidFactor, intStepSize)
+        return pouch_integral.computeRectCapa(0.0, self.m, self.zCut, self.r, self.w, shellFactor, fluidFactor, intStepSize)
  
