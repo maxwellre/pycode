@@ -5,6 +5,7 @@ Author: Yitian Shao
 Created on 2022.01.13 based on 
 '''
 
+import sys
 import numpy as np
 
 '''
@@ -127,9 +128,12 @@ class TrianglePouch:
             
         self.beta = np.arctan(self.m/self.c) # Angle Beta (viewing from the top)
         
-        self.f = 0.5 * (-self.m**2/self.c + self.c)
-        self.s = 0.5 * (self.m**2/self.c + self.c)
-        self.r = np.sqrt(self.R**2 - self.f**2) # Radius of the front cutting circle, r < R
+        self.s = 0.5 * (self.m**2/self.c + self.c) # Radius of the top cutting circle, 0 < s < R 
+        self.f = 0.5 * (-self.m**2/self.c + self.c) # f can be negative if beta > 45 degree    
+        self.r = np.sqrt(self.R**2 - self.f**2) # Radius of the front cutting circle, 0 < r < R
+        
+        if(self.f < 0):
+            print("Beta angle is greater 45 degree")
         
         if(self.m > self.r):
             print("m = %f, c = %f, r = %f, f = %f" % (self.m, self.c, self.r, self.f))
@@ -137,7 +141,7 @@ class TrianglePouch:
         elif(self.m == self.r):
             print("Warning: h equals 0!")
             
-        if(self.f < 0 or self.f >= self.R):
+        if(self.f >= self.R):
             print("m = %f, c = %f, r = %f, f = %f" % (self.m, self.c, self.r, self.f))
             sys.exit("Invalid f!")
         if(self.r < self.m):
