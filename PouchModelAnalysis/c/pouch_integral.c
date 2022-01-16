@@ -16,6 +16,14 @@
     #define M_EPSILON0 0.0000000000088541878128
 #endif
 
+/* (Utility function) */
+double getEpsilon0()
+{
+	return M_EPSILON0;
+}
+
+
+
 /* Triangle pouch is formed by cutting front, and symmetrically two sides, then top of a sphere 
 	's' is the radius of top cutting circle, 'f' is the distance between the center of front cutting circle to the center of the sphere 
 	'R' is the radius of the sphere being cutted, 'h' is the distance between the center of top cutting circle to the center of the sphere 
@@ -125,7 +133,7 @@ double computeTriCapa(double x0, double x1, double y0, double z0, double R, doub
 			capa += capai;
         }
 	}
-	return (capa * M_EPSILON0 * 0.001); // Unit 'Farad/m * mm' converted to 'Farad' by 1/1000
+	return (capa * M_EPSILON0 * 0.001); // Unit 'Farad', converted A/l from 'mm2/m' to 'm2/m' by 1/1000
 }
 
 /* Compute capacitance of the rectangle pouch*/
@@ -161,7 +169,7 @@ double computeRectCapa(double y0, double y1, double z0, double r, double w, doub
 			capa += capai;
         }		
 	}
-	return (capa * M_EPSILON0 * w * 0.001); // Unit 'Farad/m * mm' converted to 'Farad' by 1/1000
+	return (capa * M_EPSILON0 * w * 0.001); // Unit 'Farad', converted A/l from 'mm2/m' to 'm2/m' by 1/1000
 }
 
 /* [Obsoleted] Compute volume using slower double integral method */

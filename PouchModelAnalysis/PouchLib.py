@@ -26,6 +26,8 @@ if(enableFastComputing):
         try:
             libPath = ctypes.util.find_library("c/pouch_integral")
             pouch_integral = ctypes.CDLL(libPath)
+            
+            pouch_integral.getEpsilon0.restype = ctypes.c_double # This function has no input argument
 
             pouch_integral.computeVol.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, 
                                                 ctypes.c_double, ctypes.c_double]
@@ -52,6 +54,9 @@ if(enableFastComputing):
 '''
 General Functions
 '''
+def getEpsilon0():
+    return pouch_integral.getEpsilon0()
+
 def data_cut(x, y, z, ind):
     return x[ind], y[ind], z[ind]
 
@@ -90,7 +95,7 @@ def computeCornerArea(r, rad):
  
 '''----------------------------------------------------------------------------------------------------------------------''' 
 '''
-Class
+Classes
 '''
 class TrianglePouch:
     # Triangle pouch is formed by cutting front, and symmetrically two sides, then top of a sphere 
