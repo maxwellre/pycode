@@ -20,3 +20,4 @@ __pycache__
 CMakeFiles/
 include/
 lib/
+.ipynb_checkpoints/

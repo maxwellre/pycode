@@ -46,6 +46,8 @@ if(enableFastComputing):
             pouch_integral.computeVolSlow.restype = ctypes.c_double
             
             print("c shared library imported successfully!")
+
+            pouch_integral.initOpenMP()
         except:
             print("c shared library unfounded, switch to normal python computing")
             enableFastComputing = False;
@@ -141,8 +143,8 @@ class TrianglePouch:
         self.f = 0.5 * (-self.m**2/self.c + self.c) # f can be negative if beta > 45 degree    
         self.r = np.sqrt(self.R**2 - self.f**2) # Radius of the front cutting circle, 0 < r < R
         
-        if(self.f < 0):
-            print("Beta angle is greater 45 degree")
+        #if(self.f < 0):
+            #print("Beta angle is greater 45 degree")
         
         if(self.m > self.r):
             print("m = %f, c = %f, r = %f, f = %f" % (self.m, self.c, self.r, self.f))

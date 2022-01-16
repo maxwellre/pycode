@@ -22,7 +22,13 @@ double getEpsilon0()
 	return M_EPSILON0;
 }
 
-
+void initOpenMP()
+{
+	//Assign maximum number of threads for parallel computing
+	int threadNum = omp_get_max_threads();
+	printf("Parallel computing: Assigned number of threads = %d\n", threadNum);
+	omp_set_num_threads(threadNum);
+}
 
 /* Triangle pouch is formed by cutting front, and symmetrically two sides, then top of a sphere 
 	's' is the radius of top cutting circle, 'f' is the distance between the center of front cutting circle to the center of the sphere 
@@ -40,9 +46,9 @@ double sphereCorner(double s2, double f, double R2, double stepSize)
 	int iMax = (int)((s2 - f2)/stepSize); // Need integer index for parallel computing 
 	
 	//Assign maximum number of threads for parallel computing
-	int threadNum = omp_get_max_threads();
-	omp_set_num_threads(threadNum); 
-	printf("Parallel computing for sphere corner: Assigned number of threads = %d\n", threadNum);
+	//int threadNum = omp_get_max_threads();
+	//printf("Parallel computing for sphere corner: Assigned number of threads = %d\n", threadNum);
+	//omp_set_num_threads(threadNum);
 	
 	#pragma omp parallel shared(cornerV) private(Vi)
 	{		
@@ -50,7 +56,8 @@ double sphereCorner(double s2, double f, double R2, double stepSize)
 		for(int i = 1; i < iMax; i++) //for(double x = f2; x < s2; x += stepSize)
 		{
 			double x = (double)i * stepSize + f2;
-			Vi -= stepSize * (f * sqrt(x - f2) - x * acos(f/sqrt(x))) / (2 * sqrt(R2 - x));	
+			Vi -= stepSize * (f * sqrt(x - f2) - x * acos(f/sqrt(x))) / (2 * sqrt(R2 - x));
+			//printf("Number of threads = %d\n", omp_get_num_threads( ));
 		}
 		
 		#pragma omp critical
@@ -75,7 +82,7 @@ double computeVol(double s, double f, double R, double h, double n, double stepS
 	{
 		double frontCornerV = sphereCorner(s2, -f, R2, stepSize);
 		
-		printf("Front = %.3f mm3, Side = %.3f mm3\n", frontCornerV, SideCornerV);
+		//printf("Front = %.3f mm3, Side = %.3f mm3\n", frontCornerV, SideCornerV);
 		
 		return (frontCornerV - 2*SideCornerV);
 	}
@@ -84,7 +91,7 @@ double computeVol(double s, double f, double R, double h, double n, double stepS
 	
 	double upperSphereV = ( 2 * R2 * (R - h) + h * (h2 - R2) ) * M_PI/3;
 	
-	printf("Front = %.3f mm3, Side = %.3f mm3\n", frontCornerV, SideCornerV);
+	//printf("Front = %.3f mm3, Side = %.3f mm3\n", frontCornerV, SideCornerV);
 		
 	return (upperSphereV - frontCornerV - 2*SideCornerV);
 }
@@ -107,9 +114,9 @@ double computeTriCapa(double x0, double x1, double y0, double z0, double R, doub
 	int iMax = (int)(c/stepSize); // Need integer index for parallel computing 
 	
 	//Assign maximum number of threads for parallel computing
-	int threadNum = omp_get_max_threads();
-	omp_set_num_threads(threadNum); 
-	printf("Start parallel computing: Assigned number of threads = %d\n", threadNum);
+	//int threadNum = omp_get_max_threads();
+	//omp_set_num_threads(threadNum);
+	//printf("Start parallel computing: Assigned number of threads = %d\n", threadNum);
 	
 	#pragma omp parallel shared(capa) private(capai)
 	{		
@@ -150,9 +157,9 @@ double computeRectCapa(double y0, double y1, double z0, double r, double w, doub
 	int iMax = (int)((y1 - y0)/stepSize); // Need integer index for parallel computing 
 	
 	//Assign maximum number of threads for parallel computing
-	int threadNum = omp_get_max_threads();
-	omp_set_num_threads(threadNum); 
-	printf("Parallel computing for Rectangle TEFE: Assigned number of threads = %d\n", threadNum);
+	//int threadNum = omp_get_max_threads();
+	//omp_set_num_threads(threadNum);
+	//printf("Parallel computing for Rectangle TEFE: Assigned number of threads = %d\n", threadNum);
 	
 	#pragma omp parallel shared(capa) private(capai)
 	{
@@ -188,9 +195,9 @@ double computeVolSlow(double x0, double x1, double y0, double z0, double R, doub
 	int iMax = (int)(c/stepSize); // Need integer index for parallel computing 
 	
 	//Assign maximum number of threads for parallel computing
-	int threadNum = omp_get_max_threads();
-	omp_set_num_threads(threadNum); 
-	printf("Start parallel computing: Assigned number of threads = %d\n", threadNum);
+	//int threadNum = omp_get_max_threads();
+	//omp_set_num_threads(threadNum);
+	//printf("Start parallel computing: Assigned number of threads = %d\n", threadNum);
 	
 	#pragma omp parallel shared(V) private(Vi)
 	{		
