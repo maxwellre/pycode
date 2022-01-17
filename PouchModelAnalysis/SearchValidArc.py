@@ -44,7 +44,7 @@ with open('ValidArcLength.csv', 'w', newline='') as csvFile:
                 triPouch0 = TrianglePouch(R, c, m)
                 triArc = triPouch0.getFrontArc()  # Front Arc Length
 
-                if abs(triArc - 10) < 0.001:
+                if abs(triArc - 10) < 0.0005:
 
                     triVol = triPouch0.getVolume(intStepSize)
 

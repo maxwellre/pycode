@@ -15,9 +15,11 @@
 *.gif
 *.cmake
 temp
-__pycache__
+PouchModelAnalysis/.idea
+PouchModelAnalysis/__pycache__
+PouchModelAnalysis/.ipynb_checkpoints
 
 CMakeFiles/
 include/
 lib/
-.ipynb_checkpoints/
+
