@@ -427,6 +427,7 @@ class RectanglePouch:
         self.m = m
         self.meshDensity = meshDensity
         self.adPlotDensity = adPlotDensity
+        self.frontCircle = []
         self.frontLine = []
         self.leftLine = []
         self.rightLine = []
