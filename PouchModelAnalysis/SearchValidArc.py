@@ -15,7 +15,7 @@ meshDensity = 1000 # For visualization resolution (= 2R/dx)
 intStepSize = 0.0001 # (mm) Step size for performing integral computation
 
 shellThickness = 0.020 # (mm) Denoted as 'l_s' in publication
-epsilon_s = 2.0 # Relative permittivity of the shell
+epsilon_s = 3.2 # Relative permittivity of the shell
 epsilon_f = 3.2 # Relative permittivity of the fluid
 
 ''' Match arc length '''
