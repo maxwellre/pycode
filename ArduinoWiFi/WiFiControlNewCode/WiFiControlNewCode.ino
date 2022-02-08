@@ -191,11 +191,36 @@ void loop() {
             client.println("setting-changed"); // Acknowledgement for second-level command
             if(DEBUG_MOD){Serial.println(PWMGain); Serial.println(chargeDuration); Serial.println(dischargeDuration);}           
           } /* ---------------- Botton 4 ---------------- */
+
+
+          else if (msg == 'n') { // ---------------- Button 5
+            if(DEBUG_MOD){Serial.print("Pressed button5 charge PWM = "); Serial.println(PWMGain);}
+
+            analogWrite(PWM1, 0);
+            delay(1);
+            analogWrite(PWM0, PWMGain);
+            delay(chargeDuration);
+            analogWrite(PWM0, 0);
+            delay(1);  
+                     
+            client.println("command-received"); // Acknowledgement
+          } /* ---------------- Botton 5 ---------------- */
+
+          else if (msg == 'f') { // ---------------- Button 6
+            if(DEBUG_MOD){Serial.print("Pressed button6 discharge PWM = "); Serial.println(PWMGain);}
+            
+            analogWrite(PWM1, PWMGain);
+
+            client.println("command-received"); // Acknowledgement
+          } /* ---------------- Botton 6 ---------------- */
           
         } /* ---------------- GUI available ---------------- */
       } /* ---------------- client available ---------------- */
     } /* ---------------- client connected ---------------- */
 
+    analogWrite(PWM1, 0); // Ensure all PWM port is closed 
+    analogWrite(PWM0, 0);
+    
     client.stop();
     isConnected = false;
     if(DEBUG_MOD){Serial.println("client disconnected");}
