@@ -9,6 +9,8 @@
 
 #define VOLT_LEVEL_NUM 4 // Number of voltage levels 
 
+#define DEBUG_MOD false // Debug mode will print to USB COM port
+
 char ssid[] = "HVCtrl";        // your network SSID (name)
 char pass[] = "1234";    // your network password (use for WPA, or use as key for WEP)
 
@@ -25,7 +27,7 @@ uint8_t PWMGain = 0; // Range from 0 to 255
 WiFiServer server(80); // web server on port 80
 
 void setup() {
-  Serial.begin(115200); delay(500); while (!Serial); // wait for serial port to connect
+  if(DEBUG_MOD){Serial.begin(115200); delay(500); while (!Serial);} // wait for serial port to connect
 
   /************Pin mode setup and Initialization************/
   pinMode(PWM0, OUTPUT); 
@@ -39,16 +41,16 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);      
   digitalWrite(LED_BUILTIN, LOW);
-  //Serial.println("Access Point Web Server");
+  //if(DEBUG_MOD){Serial.println("Access Point Web Server");}
 
   if (WiFi.status() == WL_NO_MODULE) {
-    //Serial.println("Communication with WiFi module failed!"); 
+    //if(DEBUG_MOD){Serial.println("Communication with WiFi module failed!");}
     while (true); // don't continue
   }
 
   status = WiFi.beginAP(ssid, pass);
   if (status != WL_AP_LISTENING) {
-    //Serial.println("Creating access point failed");
+    //if(DEBUG_MOD){Serial.println("Creating access point failed");}
     while (true); // don't continue
   }
   // wait 1 seconds for connection:
@@ -75,14 +77,14 @@ void loop() {
   WiFiClient client = server.available();   // listen for incoming clients
 
   if (client) {                             // if you get a client,
-    Serial.println("New client"); 
+    if(DEBUG_MOD){Serial.println("New client");}
 
     String currentLine = "";                // make a String to hold incoming data from the client
     while (client.connected()) {            // loop while the client's connected
       if (client.available()) { 
         /* ---------------- Receive a message ---------------- */
         char msg = client.read(); // Faster way to communicate
-        Serial.println(msg);
+        if(DEBUG_MOD){Serial.println(msg);}
         /* ---------------- GUI Unconnected ---------------- */
         if ((msg == 'q') && !isConnected) {    
           client.println("high-voltage-controller-is-ready");
@@ -92,7 +94,7 @@ void loop() {
         /* ---------------- GUI Connected ---------------- */
         if (isConnected) { // Connection established, program starts
           if (msg == 'b') { // ---------------- Button 1
-            Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain);   
+            if(DEBUG_MOD){Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain);}   
 
             float indiDuration = chargeDuration*0.2;
 
@@ -127,7 +129,7 @@ void loop() {
           } /* ---------------- Botton 1 ---------------- */
           
           else if (msg == 'l') { // ---------------- Button 2
-            Serial.print("Pressed button2 Left PWM = "); Serial.println(PWMGain);
+            if(DEBUG_MOD){Serial.print("Pressed button2 Left PWM = "); Serial.println(PWMGain);}
 
             analogWrite(PWM0, PWMGain);
             delay(chargeDuration);
@@ -143,7 +145,7 @@ void loop() {
           } /* ---------------- Botton 2 ---------------- */
           
           else if (msg == 'r') { // ---------------- Button 3
-            Serial.print("Pressed button3 Right PWM = "); Serial.println(PWMGain);
+            if(DEBUG_MOD){Serial.print("Pressed button3 Right PWM = "); Serial.println(PWMGain);}
 
             analogWrite(PWM2, PWMGain);
             delay(chargeDuration);
@@ -159,23 +161,23 @@ void loop() {
           } /* ---------------- Botton 3 ---------------- */
           
           else if (msg == 's') { // ---------------- Button 4
-            client.println("command-received"); // Acknowledgement
+            client.println("ready-to-change"); // Acknowledgement
             
             String msgValue = client.readStringUntil('\r');
             client.flush();
-            Serial.println(msgValue);
+            if(DEBUG_MOD){Serial.println(msgValue);}
             
-            if(msgValue.substring(0,9) == "voltlevel") {
+            if(msgValue.substring(0,9) == "voooooooo") {
               voltageLevel = msgValue.substring(10,13).toInt();
 
               PWMGain = 255*voltageLevel/100;
             }
 
-            if(msgValue.substring(14,21) == "chargeT") {
+            if(msgValue.substring(14,21) == "chhhhhT") {
               chargeDuration = msgValue.substring(22,26).toInt();
             }
 
-            if(msgValue.substring(27,37) == "dischargeT") {
+            if(msgValue.substring(27,37) == "diiiiiiiiT") {
               dischargeDuration = msgValue.substring(38,42).toInt();
             }
 
@@ -186,8 +188,8 @@ void loop() {
             if ((dischargeDuration > 4000) || (dischargeDuration < 0)) {
                 dischargeDuration = 0;
             }
-            client.println("command-received"); // Acknowledgement for second-level command
-            Serial.println(PWMGain); Serial.println(chargeDuration); Serial.println(dischargeDuration);            
+            client.println("setting-changed"); // Acknowledgement for second-level command
+            if(DEBUG_MOD){Serial.println(PWMGain); Serial.println(chargeDuration); Serial.println(dischargeDuration);}           
           } /* ---------------- Botton 4 ---------------- */
           
         } /* ---------------- GUI available ---------------- */
@@ -196,6 +198,6 @@ void loop() {
 
     client.stop();
     isConnected = false;
-    Serial.println("client disconnected");
+    if(DEBUG_MOD){Serial.println("client disconnected");}
   }
 }
