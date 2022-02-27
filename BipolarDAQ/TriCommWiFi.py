@@ -9,6 +9,7 @@ Important: Handshake with WiFi controller is switched to 'p' for PC client! (202
 '''
 import sys
 import socket
+import select
 from psychopy import core, visual, gui, data, event
 from psychopy.tools.filetools import fromFile, toFile
 import numpy, random
@@ -152,6 +153,10 @@ if __name__ == '__main__':
                   (slider1.getRating(),slider2.getRating(),slider3.getRating()))
         else:
             button4.setFillColor([0,0,0])
+
+        datastream = sock0.recv(16384)
+        if (datastream):
+            print(datastream.decode())
 
         core.wait(0.01)  # pause
 

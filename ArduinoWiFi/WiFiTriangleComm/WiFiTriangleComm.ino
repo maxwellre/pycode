@@ -154,11 +154,17 @@ void loop() {
     }
      
     connectionCheck(); /* Reconnect if any connection is lost */
+    //isPCReady = true; PCInd = VRInd;
   }  /* ------ Wait until both the VR client and PC client connected ------ */
 
   if(isVRReady && isPCReady)
   {
-    if(DEBUG_MOD){Serial.println("VR and PC Client: Ready");}
+    if(DEBUG_MOD){
+      Serial.println("VR and PC Client: Ready");
+      if(!clients[VRInd]->connected()){Serial.println("VR cannot connect");}
+      if(!clients[PCInd]->connected()){Serial.println("PC cannot connect");}
+    }
+    
     while( clients[VRInd]->connected() && clients[PCInd]->connected() ) // While both clients are connected 
     {
       if (clients[VRInd]->available()) // Connection with VR established and data available
@@ -169,6 +175,7 @@ void loop() {
             
         if (msg == 's') { // ---------------- Button 4 (Button 1 to 3 are reserved for legacy version)
           clients[VRInd]->println("ready-to-change"); // Acknowledgement
+          delay(100);
           
           String msgValue = clients[VRInd]->readStringUntil('\r');
           clients[VRInd]->flush();
@@ -220,9 +227,27 @@ void loop() {
       
             clients[VRInd]->println("command-received"); // Acknowledgement
           } /* ---------------- Botton 6 ---------------- */
+
+          else if (msg == 'd') { // ------------- Data streaming       
+            //clients[PCInd]->println("stream-ready");    
+            delay(100);
+            while(clients[VRInd]->available())
+            {
+              String msgValue = clients[VRInd]->readStringUntil('\r');
+              clients[VRInd]->flush();        
+              clients[PCInd]->println(msgValue);       
+            }
+            if(DEBUG_MOD){Serial.println("[END]");} //if(DEBUG_MOD){Serial.println(msgValue);}   
+            delay(100);
+            clients[PCInd]->flush();
+            clients[PCInd]->print("stream-end");   
+            
+            clients[VRInd]->println("command-received"); // Acknowledgement
+                                
+          } /* ---------------- Stream data ---------------- */         
       } /* ---------------- VR client ready and available ---------------- */
 
-      if(clients[PCInd]->available()) // Connection with PC established and data available
+      if(false && clients[PCInd]->available()) // Connection with PC established and data available
       {
         /* ---------------- Receive a message ---------------- */
         char msg2 = clients[PCInd]->read(); // Fast communication by a single char  
@@ -247,6 +272,7 @@ void loop() {
 
         else if (msg2 == 's') { // ---------------- Button 4
           clients[PCInd]->println("command-received"); // Acknowledgement for PC is different!!!
+          delay(100);
           
           String msgValue = clients[PCInd]->readStringUntil('\r');
           clients[PCInd]->flush();
@@ -303,151 +329,3 @@ void loop() {
 
   if(DEBUG_MOD){Serial.println("All clients disconnected");}
 }
-
-
-//    while (client.connected()) {            // loop while the client's connected
-//      if (client.available()) { 
-//        /* ---------------- Receive a message ---------------- */
-//        char msg = client.read(); // Faster way to communicate
-//        if(DEBUG_MOD){Serial.println(msg);}
-//        
-//        /* ---------------- GUI Unconnected ---------------- */
-//        if ((msg == 'q') && !isConnected) {    
-//          client.println("high-voltage-controller-is-ready");
-//          isConnected = true;
-//        }
-//
-//        /* ---------------- GUI Connected ---------------- */
-//        if (isConnected) { // Connection established, program starts
-//          if (msg == 'b') { // ---------------- Button 1
-//            if(DEBUG_MOD){Serial.print("Pressed button1 Both PWM = "); Serial.println(PWMGain);}   
-//
-//            float indiDuration = chargeDuration*0.2;
-//
-//            for(int indi_i = 0; indi_i < 5; indi_i++) {
-//              analogWrite(PWM2, 0);
-//              analogWrite(PWM0, PWMGain);
-//              delay(indiDuration);
-//              
-//              analogWrite(PWM0, 0);
-//              analogWrite(PWM2, PWMGain);
-//              delay(indiDuration);
-//            }
-//            analogWrite(PWM0, 0);
-//            analogWrite(PWM2, 0);
-//            delay(1);
-//
-//            indiDuration = dischargeDuration*0.2;
-//            for(int indi_i = 0; indi_i < 5; indi_i++) {
-//              analogWrite(PWM3, 0);
-//              analogWrite(PWM1, PWMGain);
-//              delay(indiDuration);
-//              
-//              analogWrite(PWM1, 0);
-//              analogWrite(PWM3, PWMGain);
-//              delay(indiDuration);
-//            }
-//            analogWrite(PWM1, 0);
-//            analogWrite(PWM3, 0);
-//            delay(1);
-//
-//            client.println("command-received"); // Acknowledgement
-//          } /* ---------------- Botton 1 ---------------- */
-//          
-//          else if (msg == 'l') { // ---------------- Button 2
-//            if(DEBUG_MOD){Serial.print("Pressed button2 Left PWM = "); Serial.println(PWMGain);}
-//
-//            analogWrite(PWM0, PWMGain);
-//            delay(chargeDuration);
-//            analogWrite(PWM0, 0);
-//            delay(1);
-//            
-//            analogWrite(PWM1, PWMGain);
-//            delay(dischargeDuration);
-//            analogWrite(PWM1, 0);
-//            delay(1); 
-//
-//            client.println("command-received"); // Acknowledgement
-//          } /* ---------------- Botton 2 ---------------- */
-//          
-//          else if (msg == 'r') { // ---------------- Button 3
-//            if(DEBUG_MOD){Serial.print("Pressed button3 Right PWM = "); Serial.println(PWMGain);}
-//
-//            analogWrite(PWM2, PWMGain);
-//            delay(chargeDuration);
-//            analogWrite(PWM2, 0);
-//            delay(1);
-//            
-//            analogWrite(PWM3, PWMGain);
-//            delay(dischargeDuration);
-//            analogWrite(PWM3, 0);
-//            delay(1); 
-//
-//            client.println("command-received"); // Acknowledgement
-//          } /* ---------------- Botton 3 ---------------- */
-//          
-//          else if (msg == 's') { // ---------------- Button 4
-//            client.println("ready-to-change"); // Acknowledgement
-//            
-//            String msgValue = client.readStringUntil('\r');
-//            client.flush();
-//            if(DEBUG_MOD){Serial.println(msgValue);}
-//            
-//            if(msgValue.substring(0,9) == "voooooooo") {
-//              voltageLevel = msgValue.substring(10,13).toInt();
-//
-//              PWMGain = 255*voltageLevel/100;
-//            }
-//
-//            if(msgValue.substring(14,21) == "chhhhhT") {
-//              chargeDuration = msgValue.substring(22,26).toInt();
-//            }
-//
-//            if(msgValue.substring(27,37) == "diiiiiiiiT") {
-//              dischargeDuration = msgValue.substring(38,42).toInt();
-//            }
-//
-//            /* Safety check */
-//            if ((chargeDuration > 4000) || (chargeDuration < 0)) {
-//                chargeDuration = 0;
-//            }
-//            if ((dischargeDuration > 4000) || (dischargeDuration < 0)) {
-//                dischargeDuration = 0;
-//            }
-//            client.println("setting-changed"); // Acknowledgement for second-level command
-//            if(DEBUG_MOD){Serial.println(PWMGain); Serial.println(chargeDuration); Serial.println(dischargeDuration);}           
-//          } /* ---------------- Botton 4 ---------------- */
-//
-//
-//          else if (msg == 'n') { // ---------------- Button 5
-//            if(DEBUG_MOD){Serial.print("Pressed button5 charge PWM = "); Serial.println(PWMGain);}
-//
-//            analogWrite(PWM1, 0);
-//            delay(1);
-//            analogWrite(PWM0, PWMGain);
-//            delay(chargeDuration);
-//            analogWrite(PWM0, 0);
-//            delay(1);  
-//                     
-//            client.println("command-received"); // Acknowledgement
-//          } /* ---------------- Botton 5 ---------------- */
-//
-//          else if (msg == 'f') { // ---------------- Button 6
-//            if(DEBUG_MOD){Serial.print("Pressed button6 discharge PWM = "); Serial.println(PWMGain);}
-//            
-//            analogWrite(PWM1, PWMGain);
-//
-//            client.println("command-received"); // Acknowledgement
-//          } /* ---------------- Botton 6 ---------------- */
-          
-//        } /* ---------------- GUI available ---------------- */
-//      } /* ---------------- client available ---------------- */
-//    } /* ---------------- client connected ---------------- */
-
-//    analogWrite(PWM1, 0); // Ensure all PWM port is closed 
-//    analogWrite(PWM0, 0);
-//    
-//    client.stop();
-//    isConnected = false;
-//    if(DEBUG_MOD){Serial.println("client disconnected");}
-// // // // // //// // //// // //// // //// // //// // //// // //// // //}
