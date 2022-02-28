@@ -9,7 +9,7 @@
 
 #define VOLT_LEVEL_NUM 4 // Number of voltage levels 
 
-#define DEBUG_MOD false // Debug mode will print to USB COM port
+#define DEBUG_MOD true // Debug mode will print to USB COM port
 
 char ssid[] = "HVCtrl";        // your network SSID (name)
 char pass[] = "1234";    // your network password (use for WPA, or use as key for WEP)
@@ -161,7 +161,10 @@ void loop() {
           } /* ---------------- Botton 3 ---------------- */
           
           else if (msg == 's') { // ---------------- Button 4
-            client.println("ready-to-change"); // Acknowledgement
+            //client.println("ready-to-change"); // Acknowledgement
+            client.println("command-received"); // Acknowledgement for second-level command
+
+            delay(100);
             
             String msgValue = client.readStringUntil('\r');
             client.flush();
@@ -188,7 +191,8 @@ void loop() {
             if ((dischargeDuration > 4000) || (dischargeDuration < 0)) {
                 dischargeDuration = 0;
             }
-            client.println("setting-changed"); // Acknowledgement for second-level command
+            //client.println("setting-changed"); // Acknowledgement for second-level command
+            client.println("command-received"); // Acknowledgement for second-level command
             if(DEBUG_MOD){Serial.println(PWMGain); Serial.println(chargeDuration); Serial.println(dischargeDuration);}           
           } /* ---------------- Botton 4 ---------------- */
 

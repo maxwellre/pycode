@@ -95,7 +95,7 @@ daqdata = daqdata.reshape(AnalogInputNum,-1).T
 fig1 = plt.figure(figsize = (16,6))
 fig1.suptitle(("Fs = %.0f Hz" % Fs), fontsize=12)
 ax = fig1.add_subplot(111)
-ax.set_xlabel('Samples')
+ax.set_xlabel('Time (sec)')
 
 t = np.arange(actualReadNum.value)/Fs
 

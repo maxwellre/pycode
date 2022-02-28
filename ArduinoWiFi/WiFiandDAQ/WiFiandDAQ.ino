@@ -1,8 +1,8 @@
 #include <WiFiNINA.h>
 /************Triangle Communication *********
- * Server: Arduino WiFI, Client 0: VR headset, Client 1: PC
+ * Server: Arduino WiFI, Client: PC with DAQ
  * Author: Yitian Shao (ytshao@is.mpg.de)
- * Created on 2022.02.24 based on "WiFiControlNewCode.ino"
+ * Created on 2022.02.28 based on "WiFiTriangleComm.ino"
  * 
  * Note: New protocol coding system
 ********************************************/
@@ -17,17 +17,17 @@
 
 #define VOLT_LEVEL_NUM 4 // Number of voltage levels 
 
-#define DEBUG_MOD false // Debug mode will print to USB COM port
+#define DEBUG_MOD false
 
-#define MAX_CLIENT_NUM 20 // Must not change: Allow only one VR headset and one PC connected
+#define MAX_CLIENT_NUM 10 // Must not change: Allow only one VR headset and one PC connected
 //#define MAX_LINE_LEN * // ALlow maxium * bytes of data streamed per line
 
 char ssid[] = "HVCtrl";        // your network SSID (name)
 char pass[] = "1234";    // your network password (use for WPA, or use as key for WEP)
 
-bool isVRReady = false;
+bool isVRReady = false; // Reserved
 bool isPCReady = false;
-int VRInd = -1;
+int VRInd = -1; // Reserved
 int PCInd = -1;
 
 int status = WL_IDLE_STATUS;
@@ -45,15 +45,6 @@ int clientNum = 0;
 
 void connectionCheck()
 {
-    if(isVRReady && !(clients[VRInd]->connected()))
-    {
-      isVRReady = false;
-      clients[VRInd]->stop();
-      clients[VRInd] = NULL;
-      clientNum--;
-      VRInd = -1;
-      if(DEBUG_MOD){Serial.println("Connection to VR is lost: Reconnection Required!");}
-    }
     if(isPCReady && !(clients[PCInd]->connected()))
     {
       isPCReady = false;
@@ -93,8 +84,7 @@ void setup() {
   }
   
   if(DEBUG_MOD){Serial.println("Server Waiting Client");}
-  // wait 1 seconds for connection:
-  delay(1000);
+  delay(1000);   // wait 1 seconds for connection
 
   clientNum = 0;
   server.begin();
@@ -113,7 +103,7 @@ void loop() {
     status = WiFi.status(); 
   }
   
-  while ( (!isVRReady || !isPCReady) && clientNum < MAX_CLIENT_NUM ) // Wait until both the VR client and PC client connected
+  while ( (!isPCReady) && clientNum < MAX_CLIENT_NUM ) // Wait until both the VR client and PC client connected
   {
     WiFiClient newClient = server.available();   // listen for incoming new client
 
@@ -122,21 +112,6 @@ void loop() {
       String msgValue = newClient.readStringUntil('\r');
       newClient.flush();
       if(DEBUG_MOD){Serial.print("New client: "); Serial.println(msgValue);}
-
-      /* ---------------- Handshake with VR headset ---------------- */
-      if (!isVRReady && (msgValue == "vrheadset")) 
-      {                          
-          while(clients[clientNum] != NULL && clientNum < MAX_CLIENT_NUM){ clientNum++;}
-
-          if (clientNum < MAX_CLIENT_NUM)
-          {
-            VRInd = clientNum;
-            clients[VRInd] = new WiFiClient(newClient); // Add the new VR client to the list of clients  
-            clientNum++;
-            clients[VRInd]->println("high-voltage-controller-is-ready");
-            isVRReady = true;
-          }        
-      }
       
       /* ---------------- Handshake with PC headset ---------------- */
       if (!isPCReady && (msgValue == "pcprogram"))
@@ -152,103 +127,21 @@ void loop() {
             isPCReady = true;
           }          
       }
-      if(DEBUG_MOD){Serial.print("Client Number = "); Serial.print(clientNum); Serial.print(" , VR Ready = "); Serial.print(isVRReady); Serial.print(" , PC Ready = "); Serial.println(isPCReady);}
+      if(DEBUG_MOD){Serial.print("Client Number = "); Serial.print(clientNum); Serial.print(" , VR [Reserved] "); Serial.print(isVRReady); Serial.print(" , PC Ready = "); Serial.println(isPCReady);}
     }
      
     connectionCheck(); /* Reconnect if any connection is lost */
-    //isPCReady = true; PCInd = VRInd;
   }  /* ------ Wait until both the VR client and PC client connected ------ */
 
-  if(isVRReady && isPCReady)
+  if(isPCReady)
   {
     if(DEBUG_MOD){
-      Serial.println("VR and PC Client: Ready");
-      if(!clients[VRInd]->connected()){Serial.println("VR cannot connect");}
+      Serial.println("All Clients are Ready");
       if(!clients[PCInd]->connected()){Serial.println("PC cannot connect");}
     }
     
-    while( clients[VRInd]->connected() && clients[PCInd]->connected() ) // While both clients are connected 
+    while(clients[PCInd]->connected() ) // While all clients are connected 
     {
-      if (clients[VRInd]->available()) // Connection with VR established and data available
-      { 
-        /* ---------------- Receive a message ---------------- */
-        char msg = clients[VRInd]->read(); // Fast communication by a single char
-        if(DEBUG_MOD){Serial.print("VR: "); Serial.println(msg);}
-            
-        if (msg == 's') { // ---------------- Button 4 (Button 1 to 3 are reserved for legacy version)
-          clients[VRInd]->println("ready-to-change"); // Acknowledgement
-          delay(100);
-          
-          String msgValue = clients[VRInd]->readStringUntil('\r');
-          clients[VRInd]->flush();
-          
-          if(DEBUG_MOD){Serial.println(msgValue);}
-          
-          if(msgValue.substring(0,9) == "voooooooo") {
-            voltageLevel = msgValue.substring(10,13).toInt();
-      
-            PWMGain = 255*voltageLevel/100;
-          }
-      
-          if(msgValue.substring(14,21) == "chhhhhT") {
-            chargeDuration = msgValue.substring(22,26).toInt();
-          }
-      
-          if(msgValue.substring(27,37) == "diiiiiiiiT") {
-            dischargeDuration = msgValue.substring(38,42).toInt();
-          }
-      
-          /* Safety check */
-          if ((chargeDuration > 4000) || (chargeDuration < 0)) {
-              chargeDuration = 0;
-          }
-          if ((dischargeDuration > 4000) || (dischargeDuration < 0)) {
-              dischargeDuration = 0;
-          }
-          clients[VRInd]->println("setting-changed"); // Acknowledgement for second-level command
-          if(DEBUG_MOD){Serial.print("PC: "); Serial.println(PWMGain); Serial.println(chargeDuration); Serial.println(dischargeDuration);}           
-        } /* ---------------- Botton 4 ---------------- */
-      
-        else if (msg == 'n') { // ---------------- Button 5
-            if(DEBUG_MOD){Serial.print("VR: Pressed button5 charge PWM = "); Serial.println(PWMGain);}
-      
-            analogWrite(PWM1, 0);
-            delay(1);
-            analogWrite(PWM0, PWMGain);
-            delay(chargeDuration);
-            analogWrite(PWM0, 0);
-            delay(1);  
-                     
-            clients[VRInd]->println("command-received"); // Acknowledgement
-          } /* ---------------- Botton 5 ---------------- */
-      
-          else if (msg == 'f') { // ---------------- Button 6
-            if(DEBUG_MOD){Serial.print("VR: Pressed button6 discharge PWM = "); Serial.println(PWMGain);}
-            
-            analogWrite(PWM1, PWMGain);
-      
-            clients[VRInd]->println("command-received"); // Acknowledgement
-          } /* ---------------- Botton 6 ---------------- */
-
-          else if (msg == 'd') { // ------------- Data streaming       
-            //clients[PCInd]->println("stream-ready");    
-            delay(100);
-            while(clients[VRInd]->available())
-            {
-              String msgValue = clients[VRInd]->readStringUntil('\r');
-              clients[VRInd]->flush();        
-              clients[PCInd]->println(msgValue);       
-            }
-            if(DEBUG_MOD){Serial.println("[END]");} //if(DEBUG_MOD){Serial.println(msgValue);}   
-            delay(100);
-            clients[PCInd]->flush();
-            clients[PCInd]->print("stream-end");   
-            
-            clients[VRInd]->println("command-received"); // Acknowledgement
-                                
-          } /* ---------------- Stream data ---------------- */         
-      } /* ---------------- VR client ready and available ---------------- */
-
       if(clients[PCInd]->available()) // Connection with PC established and data available
       {
         /* ---------------- Receive a message ---------------- */
