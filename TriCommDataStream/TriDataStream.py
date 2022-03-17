@@ -27,13 +27,15 @@ if __name__ == '__main__':
 
     trial = 0
 
-    currentTime = time.strftime("%H-%M-%S", time.localtime())
-    with open(("Data%s_VR_t%02d.txt" % (currentTime, trial)), 'w') as txtFile:
-
-        dataStr = ""
-        while dataStr != "stream-end":
-            datastream = sock0.recv(16384)
-            if(datastream):
-                dataStr = datastream.decode()
-                print(dataStr)
-                txtFile.write(dataStr)
+    while(True):
+        currentTime = time.strftime("%H-%M-%S", time.localtime())
+        with open(("Data%s_VR_t%02d.txt" % (currentTime, trial)), 'w') as txtFile:
+            dataStr = ""
+            while dataStr != "stream-end":
+                datastream = sock0.recv(16384)
+                if(datastream):
+                    dataStr = datastream.decode()
+                    print(dataStr)
+                    txtFile.write(dataStr)
+        trial = trial+1
+        #break#debug

@@ -17,7 +17,7 @@
 
 #define VOLT_LEVEL_NUM 4 // Number of voltage levels 
 
-#define DEBUG_MOD false // Debug mode will print to USB COM port
+#define DEBUG_MOD true // Debug mode will print to USB COM port
 
 #define MAX_CLIENT_NUM 20 // Must not change: Allow only one VR headset and one PC connected
 //#define MAX_LINE_LEN * // ALlow maxium * bytes of data streamed per line
@@ -232,19 +232,21 @@ void loop() {
 
           else if (msg == 'd') { // ------------- Data streaming       
             //clients[PCInd]->println("stream-ready");    
+            if(DEBUG_MOD){ Serial.println("Streaming data (Length): "); }
             delay(100);
             while(clients[VRInd]->available())
             {
               String msgValue = clients[VRInd]->readStringUntil('\r');
               clients[VRInd]->flush();        
               clients[PCInd]->println(msgValue);       
+              if(DEBUG_MOD){Serial.print(msgValue.length());Serial.print(" ");} 
             }
-            if(DEBUG_MOD){Serial.println("[END]");} //if(DEBUG_MOD){Serial.println(msgValue);}   
+            if(DEBUG_MOD){Serial.println("\n[END]");} 
             delay(100);
             clients[PCInd]->flush();
             clients[PCInd]->print("stream-end");   
-            
-            clients[VRInd]->println("command-received"); // Acknowledgement
+            delay(100);
+            clients[VRInd]->println("data-received"); // Acknowledgement
                                 
           } /* ---------------- Stream data ---------------- */         
       } /* ---------------- VR client ready and available ---------------- */
