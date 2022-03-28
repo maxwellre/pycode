@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     while(True):
         currentTime = time.strftime("%H-%M-%S", time.localtime())
-        with open(("Data%s_VR_t%02d.txt" % (currentTime, trial)), 'w') as txtFile:
+        with open(("./CurrentData/Data%s_VR_t%02d.txt" % (currentTime, trial)), 'w') as txtFile:
             dataStr = ""
             while dataStr != "stream-end":
                 datastream = sock0.recv(16384)

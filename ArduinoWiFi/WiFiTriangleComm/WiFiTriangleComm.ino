@@ -17,7 +17,7 @@
 
 #define VOLT_LEVEL_NUM 4 // Number of voltage levels 
 
-#define DEBUG_MOD true // Debug mode will print to USB COM port
+#define DEBUG_MOD false // Debug mode will print to USB COM port
 
 #define MAX_CLIENT_NUM 20 // Must not change: Allow only one VR headset and one PC connected
 //#define MAX_LINE_LEN * // ALlow maxium * bytes of data streamed per line
