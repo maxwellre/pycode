@@ -174,10 +174,26 @@ void loop() {
         /* ---------------- Receive a message ---------------- */
         char msg = clients[VRInd]->read(); // Fast communication by a single char
         if(DEBUG_MOD){Serial.print("VR: "); Serial.println(msg);}
-            
-        if (msg == 's') { // ---------------- Button 4 (Button 1 to 3 are reserved for legacy version)
+
+        if (msg == 'l') { // ---------------- Button 2
+          if(DEBUG_MOD){Serial.print("VR: Pressed button2 Left PWM = "); Serial.println(PWMGain);}
+  
+          analogWrite(PWM0, PWMGain);
+          delay(chargeDuration);
+          analogWrite(PWM0, 0);
+          delay(1);
+          
+          analogWrite(PWM1, PWMGain);
+          delay(dischargeDuration);
+          analogWrite(PWM1, 0);
+          delay(1); 
+  
+          clients[VRInd]->println("command-received"); // Acknowledgement
+        } /* ---------------- Botton 2 ---------------- */
+       
+        else if (msg == 's') { // ---------------- Button 4 (Button 1 to 3 are reserved for legacy version)
           clients[VRInd]->println("ready-to-change"); // Acknowledgement
-          delay(100);
+          delay(200);
           
           String msgValue = clients[VRInd]->readStringUntil('\r');
           clients[VRInd]->flush();
@@ -257,7 +273,6 @@ void loop() {
         char msg2 = clients[PCInd]->read(); // Fast communication by a single char  
         if(DEBUG_MOD){Serial.print("PC: "); Serial.println(msg2);}
         
-
         if (msg2 == 'l') { // ---------------- Button 2
           if(DEBUG_MOD){Serial.print("PC: Pressed button2 Left PWM = "); Serial.println(PWMGain);}
   
@@ -276,7 +291,7 @@ void loop() {
 
         else if (msg2 == 's') { // ---------------- Button 4
           clients[PCInd]->println("command-received"); // Acknowledgement for PC is different!!!
-          delay(100);
+          delay(200);
           
           String msgValue = clients[PCInd]->readStringUntil('\r');
           clients[PCInd]->flush();
