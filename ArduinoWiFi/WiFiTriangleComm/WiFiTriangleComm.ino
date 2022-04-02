@@ -241,7 +241,7 @@ void loop() {
           else if (msg == 'f') { // ---------------- Button 6
             if(DEBUG_MOD){Serial.print("VR: Pressed button6 discharge PWM = "); Serial.println(PWMGain);}
             
-            analogWrite(PWM1, PWMGain);
+            analogWrite(PWM1, 255); //PWMGain // Not the potential risk when using bipolar actuation
       
             clients[VRInd]->println("command-received"); // Acknowledgement
           } /* ---------------- Botton 6 ---------------- */
@@ -331,6 +331,8 @@ void loop() {
   analogWrite(PWM1, 0); // Ensure all PWM port is closed 
   analogWrite(PWM0, 0);
 
+  clients[PCInd]->println("reconnect"); // Try reactivate PC listener
+  
   for (int cl_i = 0 ; cl_i < MAX_CLIENT_NUM ; ++cl_i)
   {
     if (clients[cl_i] != NULL) 
