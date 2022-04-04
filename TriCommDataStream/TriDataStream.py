@@ -33,6 +33,8 @@ if __name__ == '__main__':
 
     trial = 0
 
+    reconnectNum = 0;
+
     while(True):
         currentTime = time.strftime("%H-%M-%S", time.localtime())
         with open(("./tmp/Data%s_VR_t%02d.txt" % (currentTime, trial)), 'w') as txtFile:
@@ -41,11 +43,13 @@ if __name__ == '__main__':
                 datastream = sock0.recv(16384)
                 if(datastream):
                     dataStr = datastream.decode()
-                    print(dataStr)
+                    # print(dataStr)
 
                     if(dataStr == "reconnect"):
                         time.sleep(1)
                         sock0 = connectWiFi()
+                        reconnectNum += 1
+                        print("Reconnect %d" % reconnectNum)
                     else:
                         txtFile.write(dataStr)
             print("Data Saved Successfully")
