@@ -61,9 +61,9 @@ button3 = pv.Rect(window0, pos=[-0.4, -0.04], width=0.5, height=0.1, fillColor=[
                       lineWidth=1, lineColor='white')
 button3Text = pv.TextStim(window0, pos=button3.pos, text='Clip: Heartbeat', height=0.05)
 
-button4 = pv.Rect(window0, pos=[-0.4, -0.20], width=0.5, height=0.1, fillColor=[0, 0, 0],
-                      lineWidth=1, lineColor='red')
-button4Text = pv.TextStim(window0, pos=button4.pos, text='Clip: Ocean Waves', height=0.05)
+# button4 = pv.Rect(window0, pos=[-0.4, -0.20], width=0.5, height=0.1, fillColor=[0, 0, 0],
+#                       lineWidth=1, lineColor='red')
+# button4Text = pv.TextStim(window0, pos=button4.pos, text='Clip: Ocean Waves', height=0.05)
 
 button5 = pv.Rect(window0, pos=[-0.4, -0.36], width=0.5, height=0.1, fillColor=[0, 0, 0],
                       lineWidth=1, lineColor='white')
@@ -91,8 +91,8 @@ def refreshWindow():
     button3.draw()
     button3Text.draw()
 
-    button4.draw()
-    button4Text.draw()
+    # button4.draw()
+    # button4Text.draw()
 
     button5.draw()
     button5Text.draw()
@@ -321,57 +321,57 @@ if __name__ == '__main__':
             else:
                 button3.setFillColor([0, 0, 0])
 
-            if mouse0.isPressedIn(button4, buttons=[0]): # ----------------------------------------------- Button 4: Sea
-                # GUI update
-                button4.setFillColor([-0.8, -0.8, -0.8])
-                refreshWindow()
-
-                # Video info
-                videoName = "Sea.mp4"
-
-                # Construct DAQ output
-                # Construct DAQ output
-                animation = np.array([
-                    [0, 0, 0, 0,
-                     0, 1, 1, 0,
-                     0, 0, 0, 0],
-                    [-1, -1, -1, -1,
-                     -1, -1, -1, -1,
-                     -1, -1, -1, -1],
-                    [1, 0, 0, 0,
-                     1, 0, 0, 0,
-                     1, 0, 0, 0]
-                ])
-                DIOout = Animation2DIO(animation, frameChargeRepNum=400, frameDischargeRepNum=420)
-
-                DIOout = np.append(DIOout, dischargeAll(1.0), axis=0)  # Discharge all nodes
-
-                ySig = sinSignal(sinDuration=18, sinFreq=0.3)
-                ySigA = ySig.copy()
-                ySigA[0::2] = np.NAN
-                ySigB = ySig.copy()
-                ySigB = 100 - ySigB
-                ySigB[1::2] = np.NAN
-
-                ySigA = np.power(ySigA*0.01, 1.6) * 100
-                ySigB = np.power(ySigB*0.01, 1.6) * 100
-                # plt.plot(ySigA);plt.plot(ySigB);plt.show()
-
-                actNode = 7  # Range from 0 to 11
-                NodeA = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
-                                                 CHARGE_XY[actNode][1], yi) for yi in ySigA], dtype=np.uint8)
-                actNode = 0  # Range from 0 to 11
-                NodeB = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
-                                              CHARGE_XY[actNode][1], yi) for yi in ySigB], dtype=np.uint8)
-
-                oneBlock = np.bitwise_or(NodeA, NodeB)  # Extremely danger operation! Two nodes must be aligned
-                DIOout = np.append(DIOout, oneBlock.reshape((-1, Channel_Num)), axis=0)
-
-                DIOout = np.append(DIOout, dischargeAll(2.0), axis=0)  # Discharge all nodes
-
-                isIdle = True
-            else:
-                button4.setFillColor([0, 0, 0])
+            # if mouse0.isPressedIn(button4, buttons=[0]): # ----------------------------------------------- Button 4: Sea
+            #     # GUI update
+            #     button4.setFillColor([-0.8, -0.8, -0.8])
+            #     refreshWindow()
+            #
+            #     # Video info
+            #     videoName = "Sea.mp4"
+            #
+            #     # Construct DAQ output
+            #     # Construct DAQ output
+            #     animation = np.array([
+            #         [0, 0, 0, 0,
+            #          0, 1, 1, 0,
+            #          0, 0, 0, 0],
+            #         [-1, -1, -1, -1,
+            #          -1, -1, -1, -1,
+            #          -1, -1, -1, -1],
+            #         [1, 0, 0, 0,
+            #          1, 0, 0, 0,
+            #          1, 0, 0, 0]
+            #     ])
+            #     DIOout = Animation2DIO(animation, frameChargeRepNum=400, frameDischargeRepNum=420)
+            #
+            #     DIOout = np.append(DIOout, dischargeAll(1.0), axis=0)  # Discharge all nodes
+            #
+            #     ySig = sinSignal(sinDuration=18, sinFreq=0.3)
+            #     ySigA = ySig.copy()
+            #     ySigA[0::2] = np.NAN
+            #     ySigB = ySig.copy()
+            #     ySigB = 100 - ySigB
+            #     ySigB[1::2] = np.NAN
+            #
+            #     ySigA = np.power(ySigA*0.01, 1.6) * 100
+            #     ySigB = np.power(ySigB*0.01, 1.6) * 100
+            #     # plt.plot(ySigA);plt.plot(ySigB);plt.show()
+            #
+            #     actNode = 7  # Range from 0 to 11
+            #     NodeA = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
+            #                                      CHARGE_XY[actNode][1], yi) for yi in ySigA], dtype=np.uint8)
+            #     actNode = 0  # Range from 0 to 11
+            #     NodeB = np.array([Percent2PWM(PWMpulseCLKnum, CHARGE_XY[actNode][0], DISCHARGE_XY[actNode][0],
+            #                                   CHARGE_XY[actNode][1], yi) for yi in ySigB], dtype=np.uint8)
+            #
+            #     oneBlock = np.bitwise_or(NodeA, NodeB)  # Extremely danger operation! Two nodes must be aligned
+            #     DIOout = np.append(DIOout, oneBlock.reshape((-1, Channel_Num)), axis=0)
+            #
+            #     DIOout = np.append(DIOout, dischargeAll(2.0), axis=0)  # Discharge all nodes
+            #
+            #     isIdle = True
+            # else:
+            #     button4.setFillColor([0, 0, 0])
 
             if mouse0.isPressedIn(button5, buttons=[0]): # ---------------------------------------------- Button 5: Frog
                 # GUI update
