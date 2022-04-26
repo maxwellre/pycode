@@ -23,6 +23,8 @@ def connectWiFi():
                 isConnected = True
                 print("Successful connection to high voltage controller")
                 break
+            print("Waiting ... %d" % count)
+            time.sleep(0.5)
 
     return sockHandle
 
