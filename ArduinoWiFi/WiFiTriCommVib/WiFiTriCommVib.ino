@@ -253,7 +253,7 @@ void loop() {
             if(DEBUG_MOD){Serial.print("VR: Pressed button7 Vibration 1 Gain = "); Serial.println(PWMGain);}
 
             vibTime = 1000; // (ms)
-            intvTime = 10; // (ms)
+            intvTime = 25; // (ms)
 
             int cycleNum = (int)(vibTime / (intvTime * 4));
 
@@ -276,6 +276,34 @@ void loop() {
             
             clients[VRInd]->println("command-received"); // Acknowledgement       
           } /* ---------------- Botton 7 ---------------- */
+
+          else if (msg == 'x') { // ---------------- Button 8 (Vibration mode 2)
+            if(DEBUG_MOD){Serial.print("VR: Pressed button8 Vibration 2 Gain = "); Serial.println(PWMGain);}
+
+            vibTime = 1000; // (ms)
+            intvTime = 1; // (ms)
+
+            int cycleNum = (int)(vibTime / (intvTime * 4));
+
+            analogWrite(PWM1, 0);
+            delay(1);
+            for (int i = 0; i < cycleNum; i++)
+            {
+              analogWrite(PWM0, PWMGain);
+              delay(intvTime);
+              analogWrite(PWM0, 0);
+              delay(intvTime);
+              analogWrite(PWM1, 255);
+              delay(intvTime);
+              analogWrite(PWM1, 0);
+              delay(intvTime);
+            }
+            analogWrite(PWM1, 255);
+            delay(100);
+            analogWrite(PWM1, 0);
+            
+            clients[VRInd]->println("command-received"); // Acknowledgement       
+          } /* ---------------- Botton 8 ---------------- */
 
           else if (msg == 'd') { // ------------- Data streaming       
             //clients[PCInd]->println("stream-ready");    
