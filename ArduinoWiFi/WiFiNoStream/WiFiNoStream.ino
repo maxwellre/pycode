@@ -57,15 +57,6 @@ void connectionCheck()
       VRInd = -1;
       if(DEBUG_MOD){Serial.println("Connection to VR is lost: Reconnection Required!");}
     }
-//    if(isPCReady && !(clients[PCInd]->connected()))
-//    {
-//      isPCReady = false;
-//      clients[PCInd]->stop();
-//      clients[PCInd] = NULL;
-//      clientNum--;
-//      PCInd = -1;
-//      if(DEBUG_MOD){Serial.println("Connection to PC is lost: Reconnection Required!");}
-//    }
 }
 
 void setup() {
@@ -142,19 +133,6 @@ void loop() {
       }
       
       /* ---------------- Handshake with PC headset ---------------- */
-//      if (!isPCReady && (msgValue == "pcprogram"))
-//      {  
-//          while(clients[clientNum] != NULL && clientNum < MAX_CLIENT_NUM){ clientNum++;}
-//          
-//          if (clientNum < MAX_CLIENT_NUM) 
-//          {
-//            PCInd = clientNum; 
-//            clients[PCInd] = new WiFiClient(newClient); // Add the new PC client to the list of clients   
-//            clientNum++;
-//            clients[PCInd]->println("high-voltage-controller-is-ready");
-//            isPCReady = true;
-//          }          
-//      }
       if(DEBUG_MOD){Serial.print("Client Number = "); Serial.print(clientNum); Serial.print(" , VR Ready = "); Serial.print(isVRReady); Serial.print(" , PC Ready = "); Serial.println(isPCReady);}
     }
      
@@ -166,7 +144,6 @@ void loop() {
     if(DEBUG_MOD){
       Serial.println("VR and PC Client: Ready");
       if(!clients[VRInd]->connected()){Serial.println("VR cannot connect");}
-//      if(!clients[PCInd]->connected()){Serial.println("PC cannot connect");}
     }
     
     while( clients[VRInd]->connected() ) // && clients[PCInd]->connected() ) // Only check the connection with VR headset
@@ -306,86 +283,17 @@ void loop() {
 
           else if (msg == 'd') { // ------------- Data streaming         
             delay(100);
-//            while(clients[VRInd]->available())
-//            {
-//              String msgValue = clients[VRInd]->readStringUntil('\r');
-//              clients[VRInd]->flush();        
-//              clients[PCInd]->println(msgValue);       
-//            }
-            if(DEBUG_MOD){Serial.println("Data Saved");} 
-            delay(300);
-//            clients[PCInd]->flush();
-//            clients[PCInd]->print("stream-end");   
-            delay(100);
-            clients[VRInd]->println("data-received"); // Acknowledgement sent to VR headset                              
+            if(DEBUG_MOD){Serial.println("Data Saved");}  
+            delay(400);
+            clients[VRInd]->println("data-received"); // Acknowledgement sent to VR headset (Only for compatibility with legacy build)                              
           } /* ---------------- Stream data ---------------- */         
-      } /* ---------------- VR client ready and available ---------------- */
-
-//      if(clients[PCInd]->available()) // Connection with PC established and data available
-//      {
-//        /* ---------------- Receive a message ---------------- */
-//        char msg2 = clients[PCInd]->read(); // Fast communication by a single char  
-//        if(DEBUG_MOD){Serial.print("PC: "); Serial.println(msg2);}
-//        
-//        if (msg2 == 'l') { // ---------------- Button 2
-//          if(DEBUG_MOD){Serial.print("PC: Pressed button2 Left PWM = "); Serial.println(PWMGain);}
-//  
-//          analogWrite(PWM0, PWMGain);
-//          delay(chargeDuration);
-//          analogWrite(PWM0, 0);
-//          delay(1);
-//          
-//          analogWrite(PWM1, PWMGain);
-//          delay(dischargeDuration);
-//          analogWrite(PWM1, 0);
-//          delay(1); 
-//  
-//          clients[PCInd]->println("command-received"); // Acknowledgement
-//        } /* ---------------- Botton 2 ---------------- */
-//
-//        else if (msg2 == 's') { // ---------------- Button 4
-//          clients[PCInd]->println("command-received"); // Acknowledgement for PC is different!!!
-//          delay(200);
-//          
-//          String msgValue = clients[PCInd]->readStringUntil('\r');
-//          clients[PCInd]->flush();
-//          
-//          if(DEBUG_MOD){Serial.print("PC: "); Serial.println(msgValue);}
-//          
-//          if(msgValue.substring(0,9) == "voooooooo") {
-//            voltageLevel = msgValue.substring(10,13).toInt();
-//      
-//            PWMGain = 255*voltageLevel/100;
-//          }
-//      
-//          if(msgValue.substring(14,21) == "chhhhhT") {
-//            chargeDuration = msgValue.substring(22,26).toInt();
-//          }
-//      
-//          if(msgValue.substring(27,37) == "diiiiiiiiT") {
-//            dischargeDuration = msgValue.substring(38,42).toInt();
-//          }
-//      
-//          /* Safety check */
-//          if ((chargeDuration > 4000) || (chargeDuration < 0)) {
-//              chargeDuration = 0;
-//          }
-//          if ((dischargeDuration > 4000) || (dischargeDuration < 0)) {
-//              dischargeDuration = 0;
-//          }
-//          clients[PCInd]->println("command-received"); // Acknowledgement for second-level command for PC is different!!!
-//          if(DEBUG_MOD){Serial.print("PC: "); Serial.println(PWMGain); Serial.println(chargeDuration); Serial.println(dischargeDuration);}           
-//        } /* ---------------- Botton 4 ---------------- */
-//              
-//      } /* ---------------- PC client ready and available ---------------- */      
-    } 
-  }/* ---------------- All clients connected ---------------- */
+      } /* ---------------- VR client ready and available ---------------- */      
+    } /* ---------------- VR client is connected ---------------- */  
+  }/* ---------------- All clients ready ---------------- */
 
   /* When any connection is lost, stop all connection and reset all status */
   analogWrite(PWM1, 0); // Ensure all PWM port is closed 
   analogWrite(PWM0, 0);
-
-//  clients[PCInd]->println("reconnect"); // Try reactivate PC listener
   
   for (int cl_i = 0 ; cl_i < MAX_CLIENT_NUM ; ++cl_i)
   {
@@ -397,9 +305,7 @@ void loop() {
   }
   clientNum = 0;
   isVRReady = false;
-//  isPCReady = false;
   VRInd = -1;
-//  PCInd = -1;
 
   if(DEBUG_MOD){Serial.println("All clients disconnected");}
 }
