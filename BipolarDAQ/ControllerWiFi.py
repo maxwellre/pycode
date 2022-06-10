@@ -1,3 +1,6 @@
+# Modified on 2022.06.10 to communicate with controller for VR setup
+# New setting protocol
+
 import sys
 import socket
 from psychopy import core, visual, gui, data, event
@@ -34,15 +37,15 @@ button2 = visual.Rect(window0, pos=[0.15, 0.03], width=0.2, height=0.12, fillCol
                       lineWidth=1, lineColor='white')
 button3 = visual.Rect(window0, pos=[0.4, 0.03], width=0.2, height=0.12, fillColor=LIGHT_BLUE,
                       lineWidth=1, lineColor='white')
-button1Text = visual.TextStim(window0, pos=button1.pos, text='Both', height=0.05)
-button2Text = visual.TextStim(window0, pos=button2.pos, text='Left', height=0.05)
-button3Text = visual.TextStim(window0, pos=button3.pos, text='Right', height=0.05)
+button1Text = visual.TextStim(window0, pos=button1.pos, text='Press', height=0.05) # 'Both'
+button2Text = visual.TextStim(window0, pos=button2.pos, text='10 Hz', height=0.05) # 'Left'
+button3Text = visual.TextStim(window0, pos=button3.pos, text='250 Hz', height=0.05) # 'Right'
 # 990+220
 slider1 = visual.Slider(window0, ticks=[0, 15, 50, 100], labels=['0', '15', '50', '100'], startValue=0, pos=[-0.38, -0.3],
                         size=[0.44, 0.1], granularity=5, labelHeight=0.045, fillColor=[0.6,0,0], style='slider')
-slider2 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=600, pos=[-0.4, 0.0],
+slider2 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=800, pos=[-0.4, 0.0],
                         size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
-slider3 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=250, pos=[-0.4, 0.25],
+slider3 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=1000, pos=[-0.4, 0.25],
                         size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
 slider1Text = visual.TextStim(window0, pos=[-0.37, -0.3], text='Voltage Level (%)', height=0.05, color='black')
 slider2Text = visual.TextStim(window0, pos=[-0.4, 0.0], text='Charge (ms)', height=0.05, color='black')
@@ -78,9 +81,18 @@ def command(sockObj, text, lightObj = None):
         lightObj.setFillColor(LED_RED)
         refreshWindow()
 
+    # Acknowledge table: find the correct answer string
+    acknowledgeStr = None
+    if (text == 's'):
+        acknowledgeStr = "ready-to-change"
+    elif (len(text) > 1):
+        acknowledgeStr = "setting-changed"
+    else:
+        acknowledgeStr = "command-received"
+
     sockObj.sendall(text.encode())
     ans = sockObj.recv(1024)
-    while ans.decode() != "command-received":
+    while ans.decode() != acknowledgeStr:
         ans = sockObj.recv(1024)
 
     if (lightObj):
@@ -103,7 +115,7 @@ if __name__ == '__main__':
     sock0.connect((HOST, PORT))
     while not isConnected: # try to establish a WiFi connection
         #sock0.sendall(b'request-to-connect-high-voltage-controller') # "Handshake" protocol
-        sock0.sendall(b'q')  # "Handshake" new protocol
+        sock0.sendall(b'vrheadset')  # "Handshake" pretend to be the vr headset
         ans = sock0.recv(1024)
         if ans.decode() == "high-voltage-controller-is-ready": # "Handshake" protocol matched
             isConnected = True
@@ -113,36 +125,35 @@ if __name__ == '__main__':
     while True:
         refreshWindow()
 
-        if mouse0.isPressedIn(button1, buttons=[0]):
+        if mouse0.isPressedIn(button1, buttons=[0]): # "Both"
+            pass
             button1.setFillColor(DARK_GREEN)
-            command(sock0, 'b', light1)
+            command(sock0, 'l', light1)
         else:
             button1.setFillColor(LIGHT_GREEN)
 
-        if mouse0.isPressedIn(button2, buttons=[0]):
+        if mouse0.isPressedIn(button2, buttons=[0]): # "Left"
             button2.setFillColor(DARK_YELLOW)
-            command(sock0, 'l', light1)
+            command(sock0, 'w', light1)
         else:
             button2.setFillColor(LIGHT_YELLOW)
 
-        if mouse0.isPressedIn(button3, buttons=[0]):
+        if mouse0.isPressedIn(button3, buttons=[0]): # "Right"
+            pass
             button3.setFillColor(DARK_BLUE)
-            command(sock0, 'r', light1)
+            command(sock0, 'x', light1)
         else:
             button3.setFillColor(LIGHT_BLUE)
 
         if mouse0.isPressedIn(button4, buttons=[0]):
             button4.setFillColor([-0.8,-0.8,-0.8])
             command(sock0, 's', light1)
-
-            # command(sock0, 'voltlevel=%03d-chargeT=%04d-dischargeT=%04d' %
-            #         (slider1.getRating(),slider2.getRating(),slider3.getRating()), light1)
             
             command(sock0, 'voooooooo=%03d-chhhhhT=%04d-diiiiiiiiT=%04d' %
                     (slider1.getRating(), slider2.getRating(), slider3.getRating()), light1)
 
             print('voltlevel=%03d-chargeT=%04d-dischargeT=%04d' %
-                  (slider1.getRating(),slider2.getRating(),slider3.getRating()))
+                  (slider1.getRating(), slider2.getRating(), slider3.getRating()))
         else:
             button4.setFillColor([0,0,0])
 
