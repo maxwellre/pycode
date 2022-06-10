@@ -4,6 +4,7 @@
 import sys
 import socket
 from psychopy import core, visual, gui, data, event
+import time
 from psychopy.tools.filetools import fromFile, toFile
 import numpy, random
 
@@ -20,6 +21,9 @@ DARK_BLUE = [-1.0,-1.0,-0.5]
 '''Configuration'''
 HOST = '192.168.4.1'  # The server's hostname or IP address
 PORT = 80        # The port used by the server
+
+TrialNum = 11 # Repeat *** times for measurement when press
+TrialNum = 1
 
 '''GUI Design'''
 window0 = visual.Window([800, 600], monitor="testMonitor", units="height", color=[-0.7, -0.7, -0.7])
@@ -43,7 +47,7 @@ button3Text = visual.TextStim(window0, pos=button3.pos, text='250 Hz', height=0.
 # 990+220
 slider1 = visual.Slider(window0, ticks=[0, 15, 50, 100], labels=['0', '15', '50', '100'], startValue=0, pos=[-0.38, -0.3],
                         size=[0.44, 0.1], granularity=5, labelHeight=0.045, fillColor=[0.6,0,0], style='slider')
-slider2 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=800, pos=[-0.4, 0.0],
+slider2 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=1000, pos=[-0.4, 0.0],
                         size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
 slider3 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=1000, pos=[-0.4, 0.25],
                         size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
@@ -126,9 +130,12 @@ if __name__ == '__main__':
         refreshWindow()
 
         if mouse0.isPressedIn(button1, buttons=[0]): # "Both"
-            pass
-            button1.setFillColor(DARK_GREEN)
-            command(sock0, 'l', light1)
+            for i in range(TrialNum): # Repeat measurement for *** trials
+                t0 = time.time()
+                button1.setFillColor(DARK_GREEN)
+                command(sock0, 'l', light1)
+                while(time.time() - t0 < 3.9): # Wait for 4 seconds until next trial
+                    time.sleep(0.1)
         else:
             button1.setFillColor(LIGHT_GREEN)
 
@@ -139,7 +146,6 @@ if __name__ == '__main__':
             button2.setFillColor(LIGHT_YELLOW)
 
         if mouse0.isPressedIn(button3, buttons=[0]): # "Right"
-            pass
             button3.setFillColor(DARK_BLUE)
             command(sock0, 'x', light1)
         else:
