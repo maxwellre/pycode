@@ -22,8 +22,7 @@ DARK_BLUE = [-1.0,-1.0,-0.5]
 HOST = '192.168.4.1'  # The server's hostname or IP address
 PORT = 80        # The port used by the server
 
-TrialNum = 11 # Repeat *** times for measurement when press
-TrialNum = 1
+TrialNum = 4 # Repeat *** times for measurement when press
 
 '''GUI Design'''
 window0 = visual.Window([800, 600], monitor="testMonitor", units="height", color=[-0.7, -0.7, -0.7])
@@ -44,18 +43,20 @@ button3 = visual.Rect(window0, pos=[0.4, 0.03], width=0.2, height=0.12, fillColo
 button1Text = visual.TextStim(window0, pos=button1.pos, text='Press', height=0.05) # 'Both'
 button2Text = visual.TextStim(window0, pos=button2.pos, text='10 Hz', height=0.05) # 'Left'
 button3Text = visual.TextStim(window0, pos=button3.pos, text='250 Hz', height=0.05) # 'Right'
-# 990+220
-slider1 = visual.Slider(window0, ticks=[0, 15, 50, 100], labels=['0', '15', '50', '100'], startValue=0, pos=[-0.38, -0.3],
-                        size=[0.44, 0.1], granularity=5, labelHeight=0.045, fillColor=[0.6,0,0], style='slider')
+
+slider1 = visual.Slider(window0, ticks=[0, 1, 2, 5, 15, 25, 50, 75, 100],
+                        labels=['0', '', '', '5', '15', '25', '50', '75', '100'],
+                        startValue=0, pos=[-0.18, -0.3],
+                        size=[0.86, 0.1], granularity=1, labelHeight=0.045, fillColor=[0.6,0,0], style='slider')
 slider2 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=1000, pos=[-0.4, 0.0],
-                        size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
-slider3 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=1000, pos=[-0.4, 0.25],
-                        size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
+                        size=[0.4, 0.1], granularity=100, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
+slider3 = visual.Slider(window0, ticks=[0, 4000], labels=['0', '4000'], startValue=4000, pos=[-0.4, 0.25],
+                        size=[0.4, 0.1], granularity=100, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
 slider1Text = visual.TextStim(window0, pos=[-0.37, -0.3], text='Voltage Level (%)', height=0.05, color='black')
 slider2Text = visual.TextStim(window0, pos=[-0.4, 0.0], text='Charge (ms)', height=0.05, color='black')
 slider3Text = visual.TextStim(window0, pos=[-0.4, 0.25], text='Discharge (ms)', height=0.05, color='black')
 
-button4 = visual.Rect(window0, pos=[0.05, -0.3], width=0.2, height=0.12, fillColor=[0, 0, 0],
+button4 = visual.Rect(window0, pos=[0.45, -0.3], width=0.2, height=0.12, fillColor=[0, 0, 0],
                       lineWidth=1, lineColor='white')
 button4Text = visual.TextStim(window0, pos=button4.pos, text='Set', height=0.05)
 
