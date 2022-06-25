@@ -22,7 +22,9 @@ DARK_BLUE = [-1.0,-1.0,-0.5]
 HOST = '192.168.4.1'  # The server's hostname or IP address
 PORT = 80        # The port used by the server
 
-TrialNum = 4 # Repeat *** times for measurement when press
+TrialNum = 6 # Repeat *** times for measurement when press
+
+trialMeasureIndex = 2     # Trial index of the current measurement session
 
 '''GUI Design'''
 window0 = visual.Window([800, 600], monitor="testMonitor", units="height", color=[-0.7, -0.7, -0.7])
@@ -44,11 +46,12 @@ button1Text = visual.TextStim(window0, pos=button1.pos, text='Press', height=0.0
 button2Text = visual.TextStim(window0, pos=button2.pos, text='10 Hz', height=0.05) # 'Left'
 button3Text = visual.TextStim(window0, pos=button3.pos, text='250 Hz', height=0.05) # 'Right'
 
-slider1 = visual.Slider(window0, ticks=[0, 1, 2, 5, 15, 25, 50, 75, 100],
-                        labels=['0', '', '', '5', '15', '25', '50', '75', '100'],
+slider1 = visual.Slider(window0, ticks=[0, 2, 4, 8, 16, 32, 64, 100],
+                        labels=['0', '', '4', '8', '16', '32', '64', '100'],
                         startValue=0, pos=[-0.18, -0.3],
-                        size=[0.86, 0.1], granularity=1, labelHeight=0.045, fillColor=[0.6,0,0], style='slider')
-slider2 = visual.Slider(window0, ticks=[0, 1000], labels=['0', '1000'], startValue=1000, pos=[-0.4, 0.0],
+                        size=[0.86, 0.1], granularity=2, labelHeight=0.045, fillColor=[0.6,0,0], style='slider')
+slider2 = visual.Slider(window0, ticks=[0, 100, 200, 400, 800, 1200, 1600, 2000],
+                        labels=['0','','','400','','1200','','2000'], startValue=1000, pos=[-0.4, 0.0],
                         size=[0.4, 0.1], granularity=100, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
 slider3 = visual.Slider(window0, ticks=[0, 4000], labels=['0', '4000'], startValue=4000, pos=[-0.4, 0.25],
                         size=[0.4, 0.1], granularity=100, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
@@ -159,8 +162,9 @@ if __name__ == '__main__':
             command(sock0, 'voooooooo=%03d-chhhhhT=%04d-diiiiiiiiT=%04d' %
                     (slider1.getRating(), slider2.getRating(), slider3.getRating()), light1)
 
-            print('voltlevel=%03d-chargeT=%04d-dischargeT=%04d' %
-                  (slider1.getRating(), slider2.getRating(), slider3.getRating()))
+            # print('voltlevel=%03d-chargeT=%04d-dischargeT=%04d' %
+            #       (slider1.getRating(), slider2.getRating(), slider3.getRating()))
+            print('v%dc%dd%dt%d' % (slider1.getRating(), slider2.getRating(), slider3.getRating(), trialMeasureIndex))
         else:
             button4.setFillColor([0,0,0])
 
