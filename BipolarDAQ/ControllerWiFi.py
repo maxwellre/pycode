@@ -24,7 +24,7 @@ PORT = 80        # The port used by the server
 
 TrialNum = 6 # Repeat *** times for measurement when press
 
-trialMeasureIndex = 2     # Trial index of the current measurement session
+trialMeasureIndex = 1     # Trial index of the current measurement session
 
 '''GUI Design'''
 window0 = visual.Window([800, 600], monitor="testMonitor", units="height", color=[-0.7, -0.7, -0.7])
@@ -63,6 +63,9 @@ button4 = visual.Rect(window0, pos=[0.45, -0.3], width=0.2, height=0.12, fillCol
                       lineWidth=1, lineColor='white')
 button4Text = visual.TextStim(window0, pos=button4.pos, text='Set', height=0.05)
 
+slider4 = visual.Slider(window0, ticks=[1, 2], labels=['1', '2'], startValue=1, pos=[-0.4, 0.42],
+                        size=[0.2, 0.04], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='rating')
+
 '''-------------------------------------------------------------------------------------------------------------'''
 '''Functions'''
 def refreshWindow():
@@ -77,6 +80,7 @@ def refreshWindow():
     slider1.draw()
     slider2.draw()
     slider3.draw()
+    slider4.draw()
     slider1Text.draw()
     slider2Text.draw()
     slider3Text.draw()
@@ -164,6 +168,8 @@ if __name__ == '__main__':
 
             # print('voltlevel=%03d-chargeT=%04d-dischargeT=%04d' %
             #       (slider1.getRating(), slider2.getRating(), slider3.getRating()))
+
+            trialMeasureIndex = slider4.getRating()
             print('v%dc%dd%dt%d' % (slider1.getRating(), slider2.getRating(), slider3.getRating(), trialMeasureIndex))
         else:
             button4.setFillColor([0,0,0])
