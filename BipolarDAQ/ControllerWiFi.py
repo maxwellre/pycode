@@ -22,7 +22,7 @@ DARK_BLUE = [-1.0,-1.0,-0.5]
 HOST = '192.168.4.1'  # The server's hostname or IP address
 PORT = 80        # The port used by the server
 
-TrialNum = 6 # Repeat *** times for measurement when press
+TrialNum = 2 # Repeat *** times for measurement when press
 
 trialMeasureIndex = 1     # Trial index of the current measurement session
 
