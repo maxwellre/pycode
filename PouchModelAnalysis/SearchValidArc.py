@@ -26,14 +26,21 @@ time0 = time.time()
 # rectNum = np.sum(pouchStructure - 1)  # Number of rectangle pouch-cell
 # triNum = rectNum * 2 - len(pouchStructure) + 1  # Number of triangle pouch-cell
 
-mRange = np.arange(4.5, 5.0, 0.001)
-RRange = np.logspace(np.log10(50000), np.log10(7), RSearchNum)
+# mRange = np.arange(4.5, 5.0, 0.001)
+mRange = np.linspace(12.314, 12.318, 1000) # For the design of the compact actuator on 2022.06
+
+halfArc = 24.64 # 10 # For the design of the compact actuator on 2022.06
+
+# RRange = np.logspace(np.log10(50000), np.log10(7), RSearchNum)
+# RRange = np.linspace(650, 150, RSearchNum) # For the design of the compact actuator on 2022.06
+RRange = np.logspace(np.log10(360), np.log10(100), RSearchNum) # For the design of the compact actuator on 2022.06
 
 with open('ValidArcLength.csv', 'w', newline='') as csvFile:
     writer = csv.writer(csvFile)
     writer.writerow(('dashHalfDist', 'dashSpace', 'R', 'triArc', 'triVol', 'rectVol', 'dashLength'))
 
-    for c in [12.66, 8.66, 4.66]:
+    # for c in [12.66, 8.66, 4.66]:
+    for c in [72.71]: # For the design of the compact actuator on 2022.06
         for m in mRange:
             print("\n\n[%.0f s] c = %.6f mm, m = %.6f mm" % (time.time() - time0, c, m))
 
@@ -44,16 +51,17 @@ with open('ValidArcLength.csv', 'w', newline='') as csvFile:
                 triPouch0 = TrianglePouch(R, c, m)
                 triArc = triPouch0.getFrontArc()  # Front Arc Length
 
-                if abs(triArc - 10) < 0.0005:
+                if abs(triArc - halfArc) < 0.0005:
 
                     triVol = triPouch0.getVolume(intStepSize)
 
-                    w = 24.66 - c
+                    # w = 24.66 - c
+                    w = 1.0 # For the design of the compact actuator on 2022.06
                     rectPouch0 = RectanglePouch(triPouch0.r, w, triPouch0.m)
                     rectVol = rectPouch0.getVolume()
 
-                    print("\n\n[%.0f s] c = %.6f mm, m = %.6f mm, triArc = %.6f mm, R = %.6f mm, w = %.6f mm" %
-                          (time.time() - time0, c, m, triArc, R, w))
+                    print("\n\n[%.0f s] c = %.6f mm, m = %.6f mm, triArc = %.6f mm, R = %.6f mm, w = %.2f mm (triVol = %.2f mm3)" %
+                          (time.time() - time0, c, m, triArc, R, w, triVol))
 
                     writer.writerow([triPouch0.m, triPouch0.c, triPouch0.R, triArc, triVol, rectVol, w])
 

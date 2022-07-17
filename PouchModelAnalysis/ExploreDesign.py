@@ -12,7 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from PouchLib import * # This library will import numpy as np and sys
 
 meshDensity = 100 # For visualization resolution (= 2R/dx)
-intStepSize = 0.0001 # (mm) Step size for performing integral computation
+intStepSize = 0.001 # (mm) Step size for performing integral computation: 0.0001?
 
 shellThickness = 0.020 # (mm) Denoted as 'l_s' in publication
 epsilon_s = 3.2 # Relative permittivity of the shell
@@ -23,7 +23,8 @@ RSearchNum = 1000
 
 time0 = time.time()
 
-mRange = np.arange(1.0, 10.0, 0.1)
+# mRange = np.arange(1.0, 10.0, 0.1)
+mRange = np.array([12.32]) # For the design of the compact actuator on 2022.06
 
 with open('ExploreDesign.csv', 'w', newline='') as csvFile:
     writer = csv.writer(csvFile)
@@ -31,7 +32,8 @@ with open('ExploreDesign.csv', 'w', newline='') as csvFile:
                      'triCapa', 'rectCapa', 'dashLength'])
 
     for m in mRange:
-        c = m * np.sqrt(3)
+        # c = m * np.sqrt(3)
+        c = 72.71 # For the design of the compact actuator on 2022.06
         print("\n\n[%.0f s] c = %.6f mm, m = %.6f mm" % (time.time() - time0, c, m))
 
         for R in np.logspace(np.log10(50000), np.log10(c), RSearchNum):
@@ -51,7 +53,8 @@ with open('ExploreDesign.csv', 'w', newline='') as csvFile:
 
             rectCapa = rectPouch0.getCapacitance(shellThickness, epsilon_s, epsilon_f, intStepSize)  # Vary by materials
 
-            print("\n\n[%.0f s] c = %.6f mm, m = %.6f mm, R = %.6f mm" % (time.time() - time0, c, m, R))
+            print("\n\n[%.0f s] c = %.6f mm, m = %.6f mm, R = %.6f mm (triVol = %.2f mm3)" %
+                  (time.time() - time0, c, m, R, triVol))
 
             writer.writerow([triPouch0.m, triPouch0.c, triPouch0.R, triArc, triFA, triPSA, triVol, rectVol,
                              triCapa, rectCapa, w])

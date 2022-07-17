@@ -19,10 +19,12 @@
 temp
 PouchModelAnalysis/.idea
 PouchModelAnalysis/__pycache__
-PouchModelAnalysis/.ipynb_checkpoints
+
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
 
 CMakeFiles/
 include/
 lib/
 testcode/
-**/.ipynb_checkpoints/
+
