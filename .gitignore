@@ -4,6 +4,7 @@
 *.pdf
 *.xls
 *.png
+*.svg
 *.idea
 *.txt
 !Calibration20210802.txt
