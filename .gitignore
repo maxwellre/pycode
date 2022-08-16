@@ -7,6 +7,7 @@
 *.svg
 *.idea
 *.txt
+*.mat
 !Calibration20210802.txt
 *.avi
 *.tdms
