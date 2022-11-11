@@ -6,7 +6,7 @@ import socket
 from psychopy import core, visual, gui, data, event
 import time
 from psychopy.tools.filetools import fromFile, toFile
-import numpy, random
+# import numpy, random
 
 '''Marco'''
 LED_RED = [1.0,-1.0,-1.0]
@@ -22,7 +22,7 @@ DARK_BLUE = [-1.0,-1.0,-0.5]
 HOST = '192.168.4.1'  # The server's hostname or IP address
 PORT = 80        # The port used by the server
 
-TrialNum = 2 # Repeat *** times for measurement when press
+TrialNum = 1 # Repeat *** times for measurement when press
 
 trialMeasureIndex = 1     # Trial index of the current measurement session
 
@@ -51,7 +51,7 @@ slider1 = visual.Slider(window0, ticks=[0, 2, 4, 8, 16, 32, 64, 100],
                         startValue=0, pos=[-0.18, -0.3],
                         size=[0.86, 0.1], granularity=2, labelHeight=0.045, fillColor=[0.6,0,0], style='slider')
 slider2 = visual.Slider(window0, ticks=[0, 100, 200, 400, 800, 1200, 1600, 2000],
-                        labels=['0','','','400','','1200','','2000'], startValue=1000, pos=[-0.4, 0.0],
+                        labels=['0','','','400','','1200','','2000'], startValue=400, pos=[-0.4, 0.0],
                         size=[0.4, 0.1], granularity=100, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
 slider3 = visual.Slider(window0, ticks=[0, 4000], labels=['0', '4000'], startValue=4000, pos=[-0.4, 0.25],
                         size=[0.4, 0.1], granularity=100, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
@@ -110,6 +110,24 @@ def command(sockObj, text, lightObj = None):
     if (lightObj):
         lightObj.setFillColor(LED_GREEN)
 
+def connectWiFi():
+    isConnected = False
+
+    sockHandle = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sockHandle.connect((HOST, PORT))
+    while not isConnected: # try to establish a WiFi connection
+        sockHandle.sendall(b'vrheadset') # "Handshake" protocol
+
+        for count in range(1000):
+            ans = sockHandle.recv(1024)
+            if ans.decode() == "high-voltage-controller-is-ready": # "Handshake" protocol matched
+                isConnected = True
+                print("Successful connection to high voltage controller")
+                break
+            print("Waiting ... %d" % count)
+            time.sleep(0.5)
+
+    return sockHandle
 '''-------------------------------------------------------------------------------------------------------------'''
 
 
@@ -117,27 +135,17 @@ def command(sockObj, text, lightObj = None):
 '''-------------------------------------------------------------------------------------------------------------'''
 if __name__ == '__main__':
     # Initialization
-    isConnected = False
+    sock0 = connectWiFi()
 
     status0.draw()
     light1.draw()
     window0.flip()
 
-    sock0 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock0.connect((HOST, PORT))
-    while not isConnected: # try to establish a WiFi connection
-        #sock0.sendall(b'request-to-connect-high-voltage-controller') # "Handshake" protocol
-        sock0.sendall(b'vrheadset')  # "Handshake" pretend to be the vr headset
-        ans = sock0.recv(1024)
-        if ans.decode() == "high-voltage-controller-is-ready": # "Handshake" protocol matched
-            isConnected = True
-            print("Successful connection to high voltage controller")
-
     '''GUI Setup'''
     while True:
         refreshWindow()
 
-        if mouse0.isPressedIn(button1, buttons=[0]): # "Both"
+        if mouse0.isPressedIn(button1, buttons=[0]): # "Press (Both)"
             for i in range(TrialNum): # Repeat measurement for *** trials
                 t0 = time.time()
                 button1.setFillColor(DARK_GREEN)
@@ -147,13 +155,13 @@ if __name__ == '__main__':
         else:
             button1.setFillColor(LIGHT_GREEN)
 
-        if mouse0.isPressedIn(button2, buttons=[0]): # "Left"
+        if mouse0.isPressedIn(button2, buttons=[0]): # "10 Hz (Left)"
             button2.setFillColor(DARK_YELLOW)
             command(sock0, 'w', light1)
         else:
             button2.setFillColor(LIGHT_YELLOW)
 
-        if mouse0.isPressedIn(button3, buttons=[0]): # "Right"
+        if mouse0.isPressedIn(button3, buttons=[0]): # "250 Hz (Right)"
             button3.setFillColor(DARK_BLUE)
             command(sock0, 'x', light1)
         else:
@@ -162,7 +170,7 @@ if __name__ == '__main__':
         if mouse0.isPressedIn(button4, buttons=[0]):
             button4.setFillColor([-0.8,-0.8,-0.8])
             command(sock0, 's', light1)
-            
+
             command(sock0, 'voooooooo=%03d-chhhhhT=%04d-diiiiiiiiT=%04d' %
                     (slider1.getRating(), slider2.getRating(), slider3.getRating()), light1)
 

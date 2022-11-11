@@ -16,6 +16,7 @@ def connectWiFi():
     sockHandle.connect((HOST, PORT))
     while not isConnected: # try to establish a WiFi connection
         sockHandle.sendall(b'pcprogram') # "Handshake" protocol
+        # sockHandle.sendall(b'vrheadset') # Just for debugging WiFiCtrlPC
 
         for count in range(1000):
             ans = sockHandle.recv(1024)

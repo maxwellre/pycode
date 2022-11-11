@@ -108,7 +108,12 @@ void setup() {
     while (true); // don't continue
   }
   
-  if(DEBUG_MOD){Serial.println("Server Waiting Client");}
+  if(DEBUG_MOD){
+    IPAddress ip = WiFi.localIP();
+    Serial.print("IP Address: ");
+    Serial.println(ip);
+    Serial.println("Server Waiting Client");
+  }
   // wait 1 seconds for connection:
   delay(1000);
 
