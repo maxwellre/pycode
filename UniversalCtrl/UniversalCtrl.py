@@ -53,7 +53,7 @@ slider1 = visual.Slider(window0, ticks=[0, 2, 4, 8, 16, 32, 64, 100],
                         size=[0.86, 0.1], granularity=2, labelHeight=0.045, fillColor=[0.6,0,0], style='slider')
 slider2 = visual.Slider(window0, ticks=[0, 10, 20, 40, 80, 120, 160, 200, 250],
                         labels=['0','','','40','','120','','200',''], startValue=10, pos=[-0.4, 0.0],
-                        size=[0.4, 0.1], granularity=10, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
+                        size=[0.4, 0.1], granularity=1, labelHeight=0.05, fillColor=[0.6,0,0], style='slider')
 slider3 = visual.Slider(window0, ticks=[0, 1000, 2000, 4000], labels=['0', '', '2000', '4000'], startValue=2000,
                         pos=[-0.4, 0.25], size=[0.4, 0.1], granularity=200, labelHeight=0.05, fillColor=[0.6,0,0],
                         style='slider')
