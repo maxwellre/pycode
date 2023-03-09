@@ -99,11 +99,11 @@ def refreshWindow():
     button1.draw()
     button2.draw()
     button3.draw()
-    button4.draw()
+    # button4.draw()
     button1Text.draw()
     button2Text.draw()
     button3Text.draw()
-    button4Text.draw()
+    # button4Text.draw()
 
     slider1.draw()
     slider2.draw()
