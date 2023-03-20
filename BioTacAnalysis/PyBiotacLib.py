@@ -94,6 +94,30 @@ def lowpassSmooth(datain, cutFreqRatio = 0.05, order = 8):
     dataout = signal.filtfilt(b, a, datain)
     return dataout
 
+def loadRawBioTac(measureDataPath, fileName, root=None):
+    ''' Read in data '''
+    if root is None:
+        data = np.genfromtxt(ospa.join(measureDataPath, fileName), delimiter=',')
+    else:
+        data = np.genfromtxt(ospa.join(measureDataPath, root, fileName), delimiter=',')
+
+    t = data[:,0]
+    pDC = (data[:,1] - data[0,1]) * 0.0365 # DC Pressure = (Pdc - Offset) 0.0365 kPa/bit
+    tAC = data[:,2]
+    tDC = data[:,3]
+    eData = data[:,4:]# (No Unit)
+    
+    eData = eData - np.mean(eData[0:20,:], axis=0) # Subtract DC (the first 0.2 sec signal)
+
+    outData = {}
+    outData['t'] = t
+    outData['pDC'] = pDC
+    outData['tAC'] = tAC
+    outData['tDC'] = tDC
+    outData['eData'] = eData
+    
+    return outData
+
 def loadDataSegment(measureDataPath, root, fileName, lpFreq=0.5):
     actLabel = decodeActuatorInfo(root)
     if actLabel:
@@ -158,7 +182,7 @@ def examData(data, tInstance=1.5, tRange=[0, 30], dispTem=False):
     ax.set_xlim(tRange)
     ax.plot(data['t'][[ti, ti]], [-0.1, 0.1], 'k')
     
-def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverseColorbar=True):    
+def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverseColorbar=False):    
 # cmap=cm.get_cmap('inferno', 100) # cmap=cm.get_cmap('binary', 100) # cmap=cm.get_cmap('RdYlBu', 100)
     colorr = ""
     if reverseColorbar:
@@ -172,7 +196,7 @@ def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverse
     
     ''' Remove DC of electrode measurement '''
     eData = btData['eData']
-    eData = eData - np.mean(eData[tind[0]:tind[1],:], axis=0) 
+#     eData = eData - np.mean(eData[tind[0]:tind[1],:], axis=0) #     eData = eData - np.mean(eData[:20,:], axis=0) 
 
     fig0, axes = plt.subplots(1, frameNum, dpi=300, figsize=figSize_inch)
     for i in range(frameNum):
@@ -196,6 +220,9 @@ def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverse
     fig1cbar, cbarax = plt.subplots(dpi=300, figsize=(1,1))
     btMap.dispMaps(ax0, mapValues, xShift=300, cbarax=cbarax, cmap=cmap, unifyRange=unifyRange, s=0.001, dispOutline=False)
 
+    if yMax < 0:
+        yMax = np.max(btData['pDC'])
+    
     ''' Plot Signal waveform '''  
     fig2, ax1 = plt.subplots(dpi=300, figsize=(3,1))
     ax1.plot(btData['t'], btData['pDC'])
@@ -351,7 +378,7 @@ class BiotacMap:
         return mapValue
         
     def dispMaps(self, ax, mapValues, xShift=0, cbarax=None, cmap=cm.get_cmap('Greys', 100), unifyRange=[0, 1], 
-                 s=0.1, dispOutline=False):      
+                 s=0.1, dispOutline=False, colorbarLabel=False):      
         frameNum = len(mapValues)
         
         for i in range(frameNum):
@@ -371,7 +398,9 @@ class BiotacMap:
         cbar = plt.colorbar(scplt, ax=cbarax, fraction=0.05, pad=0.25, aspect=8)
         cbar.outline.set_visible(False)
         cbar.ax.get_yaxis().labelpad = 15
-        cbar.ax.set_ylabel(r'$\Delta_{\mathrm{Impedance}} (\Omega$)', rotation=270)
+        
+        if colorbarLabel:
+            cbar.ax.set_ylabel(r'$\Delta_{\mathrm{Impedance}} (\Omega$)', rotation=270)
         
         if dispOutline:
             self.dispFingerLayout(ax)
