@@ -198,10 +198,20 @@ def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverse
     eData = btData['eData']
 #     eData = eData - np.mean(eData[tind[0]:tind[1],:], axis=0) #     eData = eData - np.mean(eData[:20,:], axis=0) 
 
+    eDataIncluded = eData[tind,:]
+    rawRange = [np.amin(eDataIncluded), np.amax(eDataIncluded)]
+    print("rawRange = [%.2f, %.2f]" % (rawRange[0], rawRange[1]))
+    
+    ''' map from Cubic Interpolation '''
     fig0, axes = plt.subplots(1, frameNum, dpi=300, figsize=figSize_inch)
+    fig0cbar, cbarax = plt.subplots(dpi=300, figsize=(1,1))
     for i in range(frameNum):
-        btMap.mapFromCubicInterp(axes[i], eData[tind[i],:])
+        scplt = btMap.mapFromCubicInterp(axes[i], eData[tind[i],:], cmap=cmap, unifyRange=rawRange)
         axes[i].set_title("%.2fs" % btData['t'][tind[i]], size=3)
+       
+    cbar = plt.colorbar(scplt, ax=cbarax, fraction=0.05, pad=0.25, aspect=8)
+    cbar.outline.set_visible(False)
+    cbar.ax.get_yaxis().labelpad = 15
 
     ''' Smooth interpolation of impedance map '''
     mapValues = []
@@ -222,6 +232,15 @@ def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverse
 
     if yMax < 0:
         yMax = np.max(btData['pDC'])
+        
+    ''' Raw impedance values of 19 electrodes '''
+    fig3, axes = plt.subplots(1, frameNum, dpi=300, figsize=figSize_inch)
+    fig3cbar, cbarax = plt.subplots(dpi=300, figsize=(1,1))
+    scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=8, cmap=cmap, unifyRange=rawRange)
+    
+    cbar = plt.colorbar(scplt, ax=cbarax, fraction=0.05, pad=0.25, aspect=8)
+    cbar.outline.set_visible(False)
+    cbar.ax.get_yaxis().labelpad = 15
     
     ''' Plot Signal waveform '''  
     fig2, ax1 = plt.subplots(dpi=300, figsize=(3,1))
@@ -360,14 +379,27 @@ class BiotacMap:
             ax.scatter(self.eXY[ei,0], self.eXY[ei,1], s=s, c='darkslategrey')
             ax.text(self.eXY[ei,0]-12, self.eXY[ei,1]-5, ("E%d" % (ei+1)), fontsize=fontsize, color=fontcolor)
         ax.set_aspect('equal',adjustable='box')
+        
+    def dispRawElectrodeValue(self, ax, electrodeRawValues, s=20, cmap='gray', unifyRange=[0, 1]):
+        frameNum = electrodeRawValues.shape[0]
+        
+        for i in range(frameNum):
+            self.dispFingerLayout(ax[i], lw=1)
+            
+        for i in range(frameNum):
+            scplt = ax[i].scatter(self.eXY[:,0], self.eXY[:,1], c=electrodeRawValues[i,:].T, cmap=cmap, s=s, vmin=unifyRange[0], vmax=unifyRange[1])
+            ax[i].set_aspect('equal',adjustable='box')
+            ax[i].axis('off')
+        
+        return scplt
     
-    def dispFingerLayout(self, ax, lw=1):
+    def dispFingerLayout(self, ax, lw=1, xShift=0):
         arcObj = Arc([self.centerX, self.centerY], 2*self.cRadius, 2*self.cRadius, angle=0, theta1=0.0, 
                 theta2=180.0, color='turquoise', lw=lw)
         ax.add_patch(arcObj)
-        ax.plot([self.centerX-self.cRadius, self.centerX-self.cRadius], [self.bottomY, self.centerY], color='turquoise', lw=lw)
-        ax.plot([self.centerX+self.cRadius, self.centerX+self.cRadius], [self.bottomY, self.centerY], color='turquoise', lw=lw)
-        ax.plot([self.centerX-self.cRadius, self.centerX+self.cRadius], [self.bottomY, self.bottomY], color='turquoise', lw=lw)
+        ax.plot([self.centerX-self.cRadius +xShift, self.centerX-self.cRadius +xShift], [self.bottomY, self.centerY], color='turquoise', lw=lw)
+        ax.plot([self.centerX+self.cRadius +xShift, self.centerX+self.cRadius +xShift], [self.bottomY, self.centerY], color='turquoise', lw=lw)
+        ax.plot([self.centerX-self.cRadius +xShift, self.centerX+self.cRadius +xShift], [self.bottomY, self.bottomY], color='turquoise', lw=lw)
         ax.set_aspect('equal',adjustable='box')
         
     def dispFingerSurface(self, ax):
@@ -407,13 +439,16 @@ class BiotacMap:
         
         return cbar
         
-    def mapFromCubicInterp(self, ax, eValue, dispNode=False): # (Obsolete) Interpolation cubically between electrodes 
-        grid_z = griddata(self.eXY, eValue, (self.grid_x, self.grid_y), method='cubic')
+    def mapFromCubicInterp(self, ax, eValue, cmap='gray', unifyRange=[0, 1], dispNode=False): # Cubic interpolation of electrodes 
+#         grid_z = griddata(self.eXY, eValue, (self.grid_x, self.grid_y), method='cubic')
+        grid_z = griddata(self.eXY, eValue, (self.grid_x, self.grid_y), method='linear')
         
-        ax.imshow(grid_z.T, extent=self.extent, origin='lower', cmap='gray')
+        scplt = ax.imshow(grid_z.T, extent=self.extent, origin='lower', cmap=cmap, vmin=unifyRange[0], vmax=unifyRange[1])
         
         if dispNode:
             self.dispElectrode(ax)
             
         ax.set_aspect('equal',adjustable='box')
         ax.axis('off')
+        
+        return scplt
