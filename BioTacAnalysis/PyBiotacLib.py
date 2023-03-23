@@ -30,6 +30,13 @@ plt.rcParams['errorbar.capsize'] = 4
 
 figSize_inch = (3.2, 2.4)
 
+''' Define Color Here '''
+pltBlue = (32/255,120/255,180/255)
+pltGreen = (32/255,180/255,120/255)
+pltRed = (220/255,95/255,87/255)
+
+pltLightGrey = (240/255,240/255,240/255)
+
 def aPlot(figName='', is3D = False, dpi=72):
     ax = []
     
@@ -62,10 +69,13 @@ def decodeDataType(fileName):
         dataType = dataType[0]
     return dataType
 
-def decodeData(fileName, numFormat, frontCode='', rearCode=''):
+def decodeData(fileName, numFormat, frontCode='', rearCode='', isString=False):
     segStr = re.findall(frontCode+numFormat+rearCode, fileName)
     if segStr:
-        numData = float(re.findall(numFormat, segStr[0])[0])
+        if isString:
+            return segStr[0]
+        else:
+            numData = float(re.findall(numFormat, segStr[0])[0])
     else:
         numData = None
     return numData
@@ -94,20 +104,28 @@ def lowpassSmooth(datain, cutFreqRatio = 0.05, order = 8):
     dataout = signal.filtfilt(b, a, datain)
     return dataout
 
-def loadRawBioTac(measureDataPath, fileName, root=None):
+def loadRawBioTac(measureDataPath, fileName, root=None, fileName2=None):
+    if fileName2 is None:
+        nameLabel = decodeData(fileName, ".*.btd", isString=True)
+        fileName2 = nameLabel + "_Pac.csv"
+        
     ''' Read in data '''
     if root is None:
         data = np.genfromtxt(ospa.join(measureDataPath, fileName), delimiter=',')
+        dataPAC = np.genfromtxt(ospa.join(measureDataPath, fileName2), delimiter=',')
     else:
         data = np.genfromtxt(ospa.join(measureDataPath, root, fileName), delimiter=',')
+        dataPAC = np.genfromtxt(ospa.join(measureDataPath, root, fileName2), delimiter=',')
 
     t = data[:,0]
     pDC = (data[:,1] - data[0,1]) * 0.0365 # DC Pressure = (Pdc - Offset) 0.0365 kPa/bit
     tAC = data[:,2]
     tDC = data[:,3]
     eData = data[:,4:]# (No Unit)
-    
     eData = eData - np.mean(eData[0:20,:], axis=0) # Subtract DC (the first 0.2 sec signal)
+    
+    t2 = dataPAC[:,0]
+    pAC = (dataPAC[:,1] - dataPAC[0,1]) * 0.00037   # AC Pressure = (Pdc - Offset) 0.37 Pa/bit = (Pdc - Offset) 0.00037 kPa/bit
 
     outData = {}
     outData['t'] = t
@@ -116,47 +134,51 @@ def loadRawBioTac(measureDataPath, fileName, root=None):
     outData['tDC'] = tDC
     outData['eData'] = eData
     
+    outData['t2'] = t2
+    outData['pAC'] = pAC
+    
     return outData
 
-def loadDataSegment(measureDataPath, root, fileName, lpFreq=0.5):
-    actLabel = decodeActuatorInfo(root)
-    if actLabel:
-        tubeLen = decodeData(actLabel, '\d+', rearCode='mm')
-        infillVol = decodeData(actLabel, '[\d+\.]*\d+', rearCode='mL')   
+''' OBS '''
+# def loadDataSegment(measureDataPath, root, fileName, lpFreq=0.5): 
+#     actLabel = decodeActuatorInfo(root)
+#     if actLabel:
+#         tubeLen = decodeData(actLabel, '\d+', rearCode='mm')
+#         infillVol = decodeData(actLabel, '[\d+\.]*\d+', rearCode='mL')   
 
-        vLevel = decodeData(fileName, '\d+', frontCode='v')
-        cTime = decodeData(fileName, '\d+', frontCode='c')
-        dTime = decodeData(fileName, '\d+', frontCode='d')
-        trialNum = decodeData(fileName, '\d+', frontCode='t')
-        dLabel = "L%03dF%.1fV%03dC%04dD%04d" % (tubeLen, infillVol, vLevel, cTime, dTime)  
+#         vLevel = decodeData(fileName, '\d+', frontCode='v')
+#         cTime = decodeData(fileName, '\d+', frontCode='c')
+#         dTime = decodeData(fileName, '\d+', frontCode='d')
+#         trialNum = decodeData(fileName, '\d+', frontCode='t')
+#         dLabel = "L%03dF%.1fV%03dC%04dD%04d" % (tubeLen, infillVol, vLevel, cTime, dTime)  
 
-        print("%s --- Len=%dmm, Infill=%.1fmL, Condi: v=%d%% c=%dms d=%dms t=%d" % 
-              (dLabel, tubeLen, infillVol, vLevel, cTime, dTime, trialNum))         
+#         print("%s --- Len=%dmm, Infill=%.1fmL, Condi: v=%d%% c=%dms d=%dms t=%d" % 
+#               (dLabel, tubeLen, infillVol, vLevel, cTime, dTime, trialNum))         
 
-    ''' Read in data '''
-    data = np.genfromtxt(ospa.join(measureDataPath, root, fileName), delimiter=',')
+#     ''' Read in data '''
+#     data = np.genfromtxt(ospa.join(measureDataPath, root, fileName), delimiter=',')
 
-    t = data[:,0]
-    pDC = (data[:,1] - data[0,1]) * 0.0365 # DC Pressure = (Pdc - Offset) 0.0365 kPa/bit
-    tAC = data[:,2]
-    tDC = data[:,3]
-    eData = (4095/data[:,4:] - 1) * 10000 # (Unit: Ohm) Impedance = (4095/En - 1) 10 kOhm
+#     t = data[:,0]
+#     pDC = (data[:,1] - data[0,1]) * 0.0365 # DC Pressure = (Pdc - Offset) 0.0365 kPa/bit
+#     tAC = data[:,2]
+#     tDC = data[:,3]
+#     eData = (4095/data[:,4:] - 1) * 10000 # (Unit: Ohm) Impedance = (4095/En - 1) 10 kOhm
     
-    ''' Smooth impedance signal when 0 < lpFreq < 0.5, otherwise disabled'''
-    if lpFreq < 0.5 and lpFreq > 0:
-        for i in range(19):
-            eData[:,i] = lowpassSmooth(eData[:,i], cutFreqRatio=lpFreq, order = 8)
+#     ''' Smooth impedance signal when 0 < lpFreq < 0.5, otherwise disabled'''
+#     if lpFreq < 0.5 and lpFreq > 0:
+#         for i in range(19):
+#             eData[:,i] = lowpassSmooth(eData[:,i], cutFreqRatio=lpFreq, order = 8)
             
-    eData = eData - np.mean(eData[0:20,:], axis=0) # Subtract DC (the first 0.2 sec signal)
+#     eData = eData - np.mean(eData[0:20,:], axis=0) # Subtract DC (the first 0.2 sec signal)
 
-    outData = {}
-    outData['t'] = t
-    outData['pDC'] = pDC
-    outData['tAC'] = tAC
-    outData['tDC'] = tDC
-    outData['eData'] = eData
+#     outData = {}
+#     outData['t'] = t
+#     outData['pDC'] = pDC
+#     outData['tAC'] = tAC
+#     outData['tDC'] = tDC
+#     outData['eData'] = eData
     
-    return outData
+#     return outData
 
 def examData(data, tInstance=1.5, tRange=[0, 30], dispTem=False):
     ''' Exam data '''
@@ -182,6 +204,136 @@ def examData(data, tInstance=1.5, tRange=[0, 30], dispTem=False):
     ax.set_xlim(tRange)
     ax.plot(data['t'][[ti, ti]], [-0.1, 0.1], 'k')
     
+def plotPressureDC(tind, btData, yMax=0, ax=None, ylabelStr="Pressure (kPa)"):
+    if ax is None:
+        fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
+    ax.plot(btData['t'], btData['pDC'], zorder=10)
+    
+#     pDCUpSample, t2 = signal.resample(btData['pDC'], len(btData['pAC']), t=btData['t'])
+#     ax.plot(t2, pDCUpSample, '--', zorder=11)
+    
+    if yMax <= 0:
+        yMax = np.amax(btData['pDC'][tind[0]:tind[-1]]) + 0.1
+
+    for i in range(len(tind)):
+        ax.plot(btData['t'][[tind[i], tind[i]]], [0, yMax], 'tab:grey', lw=0.5, zorder=0)
+
+    ax.set_xlim([btData['t'][tind[0]]-0.1, btData['t'][tind[-1]]+0.1]);
+    ax.set_ylim([-0.1, yMax])
+    unifyAxesColor(ax, color='k')
+
+    ax.set_xlabel("Time (secs)")
+    ax.set_ylabel("pDC (kPa)"); #ax.set_ylabel(ylabelStr);
+    
+    if ax is None:
+        return fig1, ax
+    return None, None
+
+def nearestTimeFrameInd(t1_i, t2):
+    ind = np.argmin(abs(t2 - t1_i))
+    return ind
+    
+def plotPressureAC(tind, btData, ax=None):
+    tind2 = []
+    for ti in tind:
+        tind2.append(nearestTimeFrameInd(btData['t'][ti], btData['t2']))
+    
+    ''' Plot Signal waveform '''  
+    if ax is None:
+        fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
+    ax.plot(btData['t2'], btData['pAC'], zorder=10)
+    
+    yMin = np.amin(btData['pAC'][tind2[0]:tind2[-1]]) - 0.1
+    yMax = np.amax(btData['pAC'][tind2[0]:tind2[-1]]) + 0.1
+    
+    for i in range(len(tind2)):
+        ax.plot(btData['t2'][[tind2[i], tind2[i]]], [yMin, yMax], 'tab:grey', lw=0.5, zorder=0)
+        
+    ax.set_xlim([btData['t2'][tind2[0]]-0.1, btData['t2'][tind2[-1]]+0.1]);
+    ax.set_ylim([yMin, yMax])
+    unifyAxesColor(ax, color='k')
+
+    ax.set_xlabel("Time (secs)")
+    ax.set_ylabel("pAC (kPa)"); #ax.set_ylabel("Pressure (kPa)");
+    
+    if ax is None:
+        return fig1, ax
+    return None, None
+
+def plotPressureDCPlusAC(tind, btData, ax=None):
+    tind2 = []
+    for ti in tind:
+        tind2.append(nearestTimeFrameInd(btData['t'][ti], btData['t2']))
+    
+    ''' Upsample pDA signal based on pAC sampling rate '''
+    pDCUpSample, t2 = signal.resample(btData['pDC'], len(btData['pAC']), t=btData['t'])
+
+    pDCPlusAC = pDCUpSample+btData['pAC']
+    ''' Plot Signal waveform '''  
+    if ax is None:
+        fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
+    ax.plot(btData['t2'], pDCPlusAC, zorder=10)
+    
+    yMin = np.amin(pDCPlusAC[tind2[0]:tind2[-1]]) - 0.1
+    yMax = np.amax(pDCPlusAC[tind2[0]:tind2[-1]]) + 0.1
+    
+    for i in range(len(tind2)):
+        ax.plot(btData['t2'][[tind2[i], tind2[i]]], [yMin, yMax], 'tab:grey', lw=0.5, zorder=0)
+        
+    ax.set_xlim([btData['t2'][tind2[0]]-0.1, btData['t2'][tind2[-1]]+0.1]);
+    ax.set_ylim([yMin, yMax])
+    unifyAxesColor(ax, color='k')
+
+    ax.set_xlabel("Time (secs)")
+    ax.set_ylabel("pDC+pAC (kPa)"); #ax.set_ylabel("Pressure (kPa)");
+    
+    if ax is None:
+        return fig1, ax
+    return None, None
+
+''' -----------------------------------------------------------------------------------------------Plot Raw BioTac Data '''
+def plotElectrodeRawData(tind, btData, yMax=0, reverseColorbar=False, unifyRange="Symmetric"): 
+    colorr = ""
+    if reverseColorbar:
+        colorr = "_r"
+    cmap=cm.get_cmap("viridis"+colorr, 100)
+    
+    btMap = BiotacMap()
+    btMap.initializeDistanceMap()
+    
+    frameNum = len(tind)
+    
+    ''' Remove DC of electrode measurement '''
+    eData = btData['eData']
+    eData = eData - np.mean(eData[tind[0]:tind[0]+5,:], axis=0)
+    eDataFrames = eData[tind,:]
+    rawRange = [np.amin(eDataFrames), np.amax(eDataFrames)]
+    print("Raw data range = [%.2f, %.2f]" % (rawRange[0], rawRange[1]))
+    
+    symmetricRange = [-max(abs(rawRange[0]),abs(rawRange[1])), max(abs(rawRange[0]),abs(rawRange[1]))]
+    
+    ''' Raw impedance values of 19 electrodes '''
+    fig1, axes = plt.subplots(1, frameNum, dpi=300, figsize=figSize_inch)
+    fig1cbar, cbarax = plt.subplots(dpi=300, figsize=(1,1))
+    if unifyRange=="Raw":
+        scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=5, cmap=cmap, unifyRange=rawRange)
+    if unifyRange=="Symmetric":
+        scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=5, cmap=cmap, unifyRange=symmetricRange)
+    else:
+        scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=5, cmap=cmap, unifyRange=unifyRange)
+
+    cbar = plt.colorbar(scplt, ax=cbarax, fraction=0.05, pad=0.25, aspect=8)
+    cbar.outline.set_visible(False)
+    cbar.ax.get_yaxis().labelpad = 15
+    
+    ''' Plot Signal waveform '''  
+    fig2, ax2 = plt.subplots(3, 1, dpi=300, figsize=(figSize_inch[0], figSize_inch[1]*1.5))
+    plotPressureDC(tind, btData, yMax=yMax, ax=ax2[0], ylabelStr="");
+    plotPressureAC(tind, btData, ax=ax2[1]);
+    plotPressureDCPlusAC(tind, btData, ax=ax2[2])
+    
+    return fig1, fig1cbar, fig2, ax2
+    
 def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverseColorbar=False):    
 # cmap=cm.get_cmap('inferno', 100) # cmap=cm.get_cmap('binary', 100) # cmap=cm.get_cmap('RdYlBu', 100)
     colorr = ""
@@ -194,6 +346,15 @@ def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverse
 
     frameNum = len(tind)
     
+    ''' Raw impedance values of 19 electrodes '''
+    fig3, axes = plt.subplots(1, frameNum, dpi=300, figsize=figSize_inch)
+    fig3cbar, cbarax = plt.subplots(dpi=300, figsize=(0.6,0.4))
+    scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=8, cmap=cmap, unifyRange=rawRange)
+    
+    cbar = plt.colorbar(scplt, ax=cbarax, fraction=0.05, pad=0.25, aspect=8)
+    cbar.outline.set_visible(False)
+    cbar.ax.get_yaxis().labelpad = 15
+    
     ''' Remove DC of electrode measurement '''
     eData = btData['eData']
 #     eData = eData - np.mean(eData[tind[0]:tind[1],:], axis=0) #     eData = eData - np.mean(eData[:20,:], axis=0) 
@@ -204,7 +365,7 @@ def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverse
     
     ''' map from Cubic Interpolation '''
     fig0, axes = plt.subplots(1, frameNum, dpi=300, figsize=figSize_inch)
-    fig0cbar, cbarax = plt.subplots(dpi=300, figsize=(1,1))
+    fig0cbar, cbarax = plt.subplots(dpi=300, figsize=(0.6,0.4))
     for i in range(frameNum):
         scplt = btMap.mapFromCubicInterp(axes[i], eData[tind[i],:], cmap=cmap, unifyRange=rawRange)
         axes[i].set_title("%.2fs" % btData['t'][tind[i]], size=3)
@@ -212,6 +373,7 @@ def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverse
     cbar = plt.colorbar(scplt, ax=cbarax, fraction=0.05, pad=0.25, aspect=8)
     cbar.outline.set_visible(False)
     cbar.ax.get_yaxis().labelpad = 15
+    cbarax.axis('off')
 
     ''' Smooth interpolation of impedance map '''
     mapValues = []
@@ -227,20 +389,12 @@ def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverse
         unifyRange = [min(mapMins), max(mapMaxs)]
 
     fig1, ax0 = plt.subplots(dpi=300, figsize=(3,1))
-    fig1cbar, cbarax = plt.subplots(dpi=300, figsize=(1,1))
+    fig1cbar, cbarax = plt.subplots(dpi=300, figsize=(0.6,0.4))
     btMap.dispMaps(ax0, mapValues, xShift=300, cbarax=cbarax, cmap=cmap, unifyRange=unifyRange, s=0.001, dispOutline=False)
+    cbarax.axis('off')
 
     if yMax < 0:
         yMax = np.max(btData['pDC'])
-        
-    ''' Raw impedance values of 19 electrodes '''
-    fig3, axes = plt.subplots(1, frameNum, dpi=300, figsize=figSize_inch)
-    fig3cbar, cbarax = plt.subplots(dpi=300, figsize=(1,1))
-    scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=8, cmap=cmap, unifyRange=rawRange)
-    
-    cbar = plt.colorbar(scplt, ax=cbarax, fraction=0.05, pad=0.25, aspect=8)
-    cbar.outline.set_visible(False)
-    cbar.ax.get_yaxis().labelpad = 15
     
     ''' Plot Signal waveform '''  
     fig2, ax1 = plt.subplots(dpi=300, figsize=(3,1))
@@ -380,30 +534,31 @@ class BiotacMap:
             ax.text(self.eXY[ei,0]-12, self.eXY[ei,1]-5, ("E%d" % (ei+1)), fontsize=fontsize, color=fontcolor)
         ax.set_aspect('equal',adjustable='box')
         
-    def dispRawElectrodeValue(self, ax, electrodeRawValues, s=20, cmap='gray', unifyRange=[0, 1]):
+    def dispRawElectrodeValue(self, ax, electrodeRawValues, s=8, cmap='gray', unifyRange=[0, 1]):
         frameNum = electrodeRawValues.shape[0]
         
         for i in range(frameNum):
-            self.dispFingerLayout(ax[i], lw=1)
+            self.dispFingerSurface(ax[i], color=pltLightGrey)
+            self.dispFingerLayout(ax[i], color=pltLightGrey)
             
         for i in range(frameNum):
-            scplt = ax[i].scatter(self.eXY[:,0], self.eXY[:,1], c=electrodeRawValues[i,:].T, cmap=cmap, s=s, vmin=unifyRange[0], vmax=unifyRange[1])
+            scplt = ax[i].scatter(self.eXY[:,0], self.eXY[:,1], c=electrodeRawValues[i,:].T, cmap=cmap, s=s, vmin=unifyRange[0], vmax=unifyRange[1],zorder=10)
             ax[i].set_aspect('equal',adjustable='box')
             ax[i].axis('off')
         
         return scplt
     
-    def dispFingerLayout(self, ax, lw=1, xShift=0):
-        arcObj = Arc([self.centerX, self.centerY], 2*self.cRadius, 2*self.cRadius, angle=0, theta1=0.0, 
-                theta2=180.0, color='turquoise', lw=lw)
+    def dispFingerLayout(self, ax, lw=1, xShift=0, color='turquoise'):
+        arcObj = Arc([self.centerX +xShift, self.centerY], 2*self.cRadius, 2*self.cRadius, angle=0, theta1=0.0, 
+                theta2=180.0, color=color, lw=lw, zorder=1)
         ax.add_patch(arcObj)
-        ax.plot([self.centerX-self.cRadius +xShift, self.centerX-self.cRadius +xShift], [self.bottomY, self.centerY], color='turquoise', lw=lw)
-        ax.plot([self.centerX+self.cRadius +xShift, self.centerX+self.cRadius +xShift], [self.bottomY, self.centerY], color='turquoise', lw=lw)
-        ax.plot([self.centerX-self.cRadius +xShift, self.centerX+self.cRadius +xShift], [self.bottomY, self.bottomY], color='turquoise', lw=lw)
+        ax.plot([self.centerX-self.cRadius +xShift, self.centerX-self.cRadius +xShift], [self.bottomY, self.centerY], color=color, lw=lw,zorder=1)
+        ax.plot([self.centerX+self.cRadius +xShift, self.centerX+self.cRadius +xShift], [self.bottomY, self.centerY], color=color, lw=lw,zorder=1)
+        ax.plot([self.centerX-self.cRadius +xShift, self.centerX+self.cRadius +xShift], [self.bottomY, self.bottomY], color=color, lw=lw,zorder=1)
         ax.set_aspect('equal',adjustable='box')
         
-    def dispFingerSurface(self, ax):
-        ax.plot(self.gridXY[:,0], self.gridXY[:,1], color='turquoise', lw=0.1)
+    def dispFingerSurface(self, ax, color='turquoise'):
+        ax.plot(self.gridXY[:,0], self.gridXY[:,1], color=color, lw=0.1,zorder=0)
         
     def constructMap(self, eValue):
         mapValue = np.matmul(eValue, self.Phi) / self.SumPhi
@@ -440,8 +595,7 @@ class BiotacMap:
         return cbar
         
     def mapFromCubicInterp(self, ax, eValue, cmap='gray', unifyRange=[0, 1], dispNode=False): # Cubic interpolation of electrodes 
-#         grid_z = griddata(self.eXY, eValue, (self.grid_x, self.grid_y), method='cubic')
-        grid_z = griddata(self.eXY, eValue, (self.grid_x, self.grid_y), method='linear')
+        grid_z = griddata(self.eXY, eValue, (self.grid_x, self.grid_y), method='cubic')
         
         scplt = ax.imshow(grid_z.T, extent=self.extent, origin='lower', cmap=cmap, vmin=unifyRange[0], vmax=unifyRange[1])
         
