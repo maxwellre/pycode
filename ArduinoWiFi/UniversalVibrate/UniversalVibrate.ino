@@ -10,8 +10,8 @@
 /************Board Configuration************/
 #define DAC A0 // Reserved analog output pin
 /*Note: PWM pin 1 is reserved for relay!*/
-#define PWM0 3 // The PWM pin used to control optocoupler 0
-#define PWM1 4 // The PWM pin used to control optocoupler 1
+#define PWM0 0 // The PWM pin used to control optocoupler 0
+#define PWM1 1 // The PWM pin used to control optocoupler 1
 // #define PWM2 5 // The PWM pin used to control optocoupler 2
 // #define PWM3 6 // The PWM pin used to control optocoupler 3
 
@@ -158,7 +158,7 @@ void setup() {
     while (true); // don't continue
   }
 
-  status = WiFi.beginAP(ssid, pass);
+  status = WiFi.beginAP(ssid); //pass
   if (status != WL_AP_LISTENING) {
     if(DEBUG_MOD){Serial.println("Creating access point failed");}
     while (true); // don't continue
