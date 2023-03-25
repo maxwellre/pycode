@@ -49,7 +49,15 @@ def aPlot(figName='', is3D = False, dpi=72):
         ax = fig1.add_subplot(111)
         
     return ax, fig1
-	
+
+def lowpassSmooth(datain, cutFreqRatio = 0.05, order = 8):
+    if (cutFreqRatio > 0) and (cutFreqRatio < 0.5):
+        b, a = signal.butter(order, 2 * cutFreqRatio, btype='low')
+        dataout = signal.filtfilt(b, a, datain)
+        return dataout
+    else:
+        print("Incorrect cutFreqRatio outside of (0, 0.5)")
+
 def unifyAxesColor(ax, color='k'):
     ax.spines['top'].set_color(color)
     ax.spines['left'].set_color(color)
@@ -101,7 +109,7 @@ def sample2Time(ax, Fs): # Covert the xticks of current plot from samples to tim
 
 def lowpassSmooth(datain, cutFreqRatio = 0.05, order = 8):
     b, a = signal.butter(order, 2 * cutFreqRatio, btype='low')
-    dataout = signal.filtfilt(b, a, datain)
+    dataout = signal.filtfilt(b, a, datain, axis=0)
     return dataout
 
 def loadRawBioTac(measureDataPath, fileName, root=None, fileName2=None):
@@ -199,8 +207,10 @@ def examData(data, tInstance=1.5, tRange=[0, 30], dispTem=False):
     ax1.set_xlim(tRange)
     
     _, ax = plt.subplots(dpi=300, figsize=(3,2))
+#     eData = lowpassSmooth(data['eData'], cutFreqRatio = 0.2, order = 8) # Lowpass filter electrode data 
+    eData = data['eData']
     for i in range(19):
-        ax.plot(data['t'], data['eData'][:,i])
+        ax.plot(data['t'], eData[:,i])
     ax.set_xlim(tRange)
     ax.plot(data['t'][[ti, ti]], [-0.1, 0.1], 'k')
     
@@ -306,6 +316,9 @@ def plotElectrodeRawData(tind, btData, yMax=0, reverseColorbar=False, unifyRange
     ''' Remove DC of electrode measurement '''
     eData = btData['eData']
     eData = eData - np.mean(eData[tind[0]:tind[0]+5,:], axis=0)
+    
+#     eData = lowpassSmooth(eData, cutFreqRatio = 0.2, order = 8) # Lowpass filter electrode data 
+    
     eDataFrames = eData[tind,:]
     rawRange = [np.amin(eDataFrames), np.amax(eDataFrames)]
     print("Raw data range = [%.2f, %.2f]" % (rawRange[0], rawRange[1]))
@@ -315,6 +328,7 @@ def plotElectrodeRawData(tind, btData, yMax=0, reverseColorbar=False, unifyRange
     ''' Raw impedance values of 19 electrodes '''
     fig1, axes = plt.subplots(1, frameNum, dpi=300, figsize=figSize_inch)
     fig1cbar, cbarax = plt.subplots(dpi=300, figsize=(1,1))
+    
     if unifyRange=="Raw":
         scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=5, cmap=cmap, unifyRange=rawRange)
     if unifyRange=="Symmetric":
