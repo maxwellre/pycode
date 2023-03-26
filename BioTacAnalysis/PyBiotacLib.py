@@ -112,6 +112,11 @@ def lowpassSmooth(datain, cutFreqRatio = 0.05, order = 8):
     dataout = signal.filtfilt(b, a, datain, axis=0)
     return dataout
 
+def highpassFilter(datain, cutFreqRatio = 0.05, order = 8):
+    b, a = signal.butter(order, 2 * cutFreqRatio, btype='highpass')
+    dataout = signal.filtfilt(b, a, datain, axis=0)
+    return dataout
+
 def loadRawBioTac(measureDataPath, fileName, root=None, fileName2=None):
     if fileName2 is None:
         nameLabel = decodeData(fileName, ".*.btd", isString=True)
@@ -248,13 +253,19 @@ def plotPressureAC(tind, btData, ax=None):
     for ti in tind:
         tind2.append(nearestTimeFrameInd(btData['t'][ti], btData['t2']))
     
+    ''' Preprocess: flip and filtering '''
+    pACFlip = -btData['pAC'];
+    
+    pACFlipFilted = highpassFilter(pACFlip, cutFreqRatio = 0.01, order = 8)
+    
     ''' Plot Signal waveform '''  
     if ax is None:
         fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
-    ax.plot(btData['t2'], btData['pAC'], zorder=10)
+#     ax.plot(btData['t2'], pACFlip, zorder=10)
+    ax.plot(btData['t2'], pACFlipFilted, zorder=10) # Highpass filtered
     
-    yMin = np.amin(btData['pAC'][tind2[0]:tind2[-1]]) - 0.1
-    yMax = np.amax(btData['pAC'][tind2[0]:tind2[-1]]) + 0.1
+    yMin = np.amin(pACFlip[tind2[0]:tind2[-1]]) - 0.1
+    yMax = np.amax(pACFlip[tind2[0]:tind2[-1]]) + 0.1
     
     for i in range(len(tind2)):
         ax.plot(btData['t2'][[tind2[i], tind2[i]]], [yMin, yMax], 'tab:grey', lw=0.5, zorder=0)
@@ -302,11 +313,12 @@ def plotPressureDCPlusAC(tind, btData, ax=None):
     return None, None
 
 ''' -----------------------------------------------------------------------------------------------Plot Raw BioTac Data '''
-def plotElectrodeRawData(tind, btData, yMax=0, reverseColorbar=False, unifyRange="Symmetric"): 
-    colorr = ""
-    if reverseColorbar:
-        colorr = "_r"
-    cmap=cm.get_cmap("viridis"+colorr, 100)
+def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric"): 
+
+#     cmap=cm.get_cmap("viridis", 100)
+#     cmap=cm.get_cmap("vlag", 100)
+    cmap=cm.get_cmap("coolwarm", 100)
+#     cmap=cm.get_cmap("Spectral"+"_r", 100)
     
     btMap = BiotacMap()
     btMap.initializeDistanceMap()
@@ -341,10 +353,10 @@ def plotElectrodeRawData(tind, btData, yMax=0, reverseColorbar=False, unifyRange
     cbar.ax.get_yaxis().labelpad = 15
     
     ''' Plot Signal waveform '''  
-    fig2, ax2 = plt.subplots(3, 1, dpi=300, figsize=(figSize_inch[0], figSize_inch[1]*1.5))
+    fig2, ax2 = plt.subplots(2, 1, dpi=300, figsize=(figSize_inch[0], figSize_inch[1]))
     plotPressureDC(tind, btData, yMax=yMax, ax=ax2[0], ylabelStr="");
     plotPressureAC(tind, btData, ax=ax2[1]);
-    plotPressureDCPlusAC(tind, btData, ax=ax2[2])
+#     plotPressureDCPlusAC(tind, btData, ax=ax2[2])
     
     return fig1, fig1cbar, fig2, ax2
     
