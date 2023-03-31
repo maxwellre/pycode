@@ -152,47 +152,6 @@ def loadRawBioTac(measureDataPath, fileName, root=None, fileName2=None):
     
     return outData
 
-''' OBS '''
-# def loadDataSegment(measureDataPath, root, fileName, lpFreq=0.5): 
-#     actLabel = decodeActuatorInfo(root)
-#     if actLabel:
-#         tubeLen = decodeData(actLabel, '\d+', rearCode='mm')
-#         infillVol = decodeData(actLabel, '[\d+\.]*\d+', rearCode='mL')   
-
-#         vLevel = decodeData(fileName, '\d+', frontCode='v')
-#         cTime = decodeData(fileName, '\d+', frontCode='c')
-#         dTime = decodeData(fileName, '\d+', frontCode='d')
-#         trialNum = decodeData(fileName, '\d+', frontCode='t')
-#         dLabel = "L%03dF%.1fV%03dC%04dD%04d" % (tubeLen, infillVol, vLevel, cTime, dTime)  
-
-#         print("%s --- Len=%dmm, Infill=%.1fmL, Condi: v=%d%% c=%dms d=%dms t=%d" % 
-#               (dLabel, tubeLen, infillVol, vLevel, cTime, dTime, trialNum))         
-
-#     ''' Read in data '''
-#     data = np.genfromtxt(ospa.join(measureDataPath, root, fileName), delimiter=',')
-
-#     t = data[:,0]
-#     pDC = (data[:,1] - data[0,1]) * 0.0365 # DC Pressure = (Pdc - Offset) 0.0365 kPa/bit
-#     tAC = data[:,2]
-#     tDC = data[:,3]
-#     eData = (4095/data[:,4:] - 1) * 10000 # (Unit: Ohm) Impedance = (4095/En - 1) 10 kOhm
-    
-#     ''' Smooth impedance signal when 0 < lpFreq < 0.5, otherwise disabled'''
-#     if lpFreq < 0.5 and lpFreq > 0:
-#         for i in range(19):
-#             eData[:,i] = lowpassSmooth(eData[:,i], cutFreqRatio=lpFreq, order = 8)
-            
-#     eData = eData - np.mean(eData[0:20,:], axis=0) # Subtract DC (the first 0.2 sec signal)
-
-#     outData = {}
-#     outData['t'] = t
-#     outData['pDC'] = pDC
-#     outData['tAC'] = tAC
-#     outData['tDC'] = tDC
-#     outData['eData'] = eData
-    
-#     return outData
-
 def examData(data, tInstance=1.5, tRange=[0, 30], dispTem=False):
     ''' Exam data '''
     ti = np.argmax(data['t']>=tInstance)
@@ -314,11 +273,13 @@ def plotPressureDCPlusAC(tind, btData, ax=None):
 
 ''' -----------------------------------------------------------------------------------------------Plot Raw BioTac Data '''
 def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric"): 
-
 #     cmap=cm.get_cmap("viridis", 100)
 #     cmap=cm.get_cmap("vlag", 100)
-    cmap=cm.get_cmap("coolwarm", 100)
+#     cmap=cm.get_cmap("coolwarm", 100)
 #     cmap=cm.get_cmap("Spectral"+"_r", 100)
+#     cmap=cm.get_cmap("seismic", 100)
+#     cmap=cm.get_cmap("PuOr"+"_r", 100)
+    cmap=cm.get_cmap("bwr", 100)
     
     btMap = BiotacMap()
     btMap.initializeDistanceMap()
@@ -340,12 +301,12 @@ def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric"):
     ''' Raw impedance values of 19 electrodes '''
     fig1, axes = plt.subplots(1, frameNum, dpi=300, figsize=figSize_inch)
     fig1cbar, cbarax = plt.subplots(dpi=300, figsize=(1,1))
-    
+
     if unifyRange=="Raw":
         scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=5, cmap=cmap, unifyRange=rawRange)
-    if unifyRange=="Symmetric":
+    elif unifyRange=="Symmetric":
         scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=5, cmap=cmap, unifyRange=symmetricRange)
-    else:
+    elif type(unifyRange) != str:
         scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=5, cmap=cmap, unifyRange=unifyRange)
 
     cbar = plt.colorbar(scplt, ax=cbarax, fraction=0.05, pad=0.25, aspect=8)
@@ -632,3 +593,45 @@ class BiotacMap:
         ax.axis('off')
         
         return scplt
+
+    
+#  ''' OBS '''
+# def loadDataSegment(measureDataPath, root, fileName, lpFreq=0.5): 
+#     actLabel = decodeActuatorInfo(root)
+#     if actLabel:
+#         tubeLen = decodeData(actLabel, '\d+', rearCode='mm')
+#         infillVol = decodeData(actLabel, '[\d+\.]*\d+', rearCode='mL')   
+
+#         vLevel = decodeData(fileName, '\d+', frontCode='v')
+#         cTime = decodeData(fileName, '\d+', frontCode='c')
+#         dTime = decodeData(fileName, '\d+', frontCode='d')
+#         trialNum = decodeData(fileName, '\d+', frontCode='t')
+#         dLabel = "L%03dF%.1fV%03dC%04dD%04d" % (tubeLen, infillVol, vLevel, cTime, dTime)  
+
+#         print("%s --- Len=%dmm, Infill=%.1fmL, Condi: v=%d%% c=%dms d=%dms t=%d" % 
+#               (dLabel, tubeLen, infillVol, vLevel, cTime, dTime, trialNum))         
+
+#     ''' Read in data '''
+#     data = np.genfromtxt(ospa.join(measureDataPath, root, fileName), delimiter=',')
+
+#     t = data[:,0]
+#     pDC = (data[:,1] - data[0,1]) * 0.0365 # DC Pressure = (Pdc - Offset) 0.0365 kPa/bit
+#     tAC = data[:,2]
+#     tDC = data[:,3]
+#     eData = (4095/data[:,4:] - 1) * 10000 # (Unit: Ohm) Impedance = (4095/En - 1) 10 kOhm
+    
+#     ''' Smooth impedance signal when 0 < lpFreq < 0.5, otherwise disabled'''
+#     if lpFreq < 0.5 and lpFreq > 0:
+#         for i in range(19):
+#             eData[:,i] = lowpassSmooth(eData[:,i], cutFreqRatio=lpFreq, order = 8)
+            
+#     eData = eData - np.mean(eData[0:20,:], axis=0) # Subtract DC (the first 0.2 sec signal)
+
+#     outData = {}
+#     outData['t'] = t
+#     outData['pDC'] = pDC
+#     outData['tAC'] = tAC
+#     outData['tDC'] = tDC
+#     outData['eData'] = eData
+    
+#     return outData
