@@ -8,6 +8,7 @@ import numpy as np
 import re
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
+from matplotlib.colors import ListedColormap
 from matplotlib.patches import Arc
 import pandas as pd
 from scipy import signal
@@ -30,12 +31,25 @@ plt.rcParams['errorbar.capsize'] = 4
 
 figSize_inch = (3.2, 2.4)
 
+plotLinewidth = 0.75
+plotMarkersize = 0.8
+markeredgewidth = 0
+plotMarker = '.-'
+
 ''' Define Color Here '''
 pltBlue = (32/255,120/255,180/255)
 pltGreen = (32/255,180/255,120/255)
 pltRed = (220/255,95/255,87/255)
 
 pltLightGrey = (240/255,240/255,240/255)
+
+def customizeCMap(cRange=[100,100],negaColor="GnBu_r",posiColor="OrRd"):
+    cmap1 = cm.get_cmap(negaColor, 1000)
+    cmap2 = cm.get_cmap(posiColor, 1000)
+    newcmp1 = cmap1(np.linspace(0, 1, cRange[0]))
+    newcmp2 = cmap2(np.linspace(0, 1, cRange[1]))
+    cmap = ListedColormap(np.concatenate((newcmp1,newcmp2), axis=0))
+    return cmap
 
 def aPlot(figName='', is3D = False, dpi=72):
     ax = []
@@ -141,14 +155,17 @@ def loadRawBioTac(measureDataPath, fileName, root=None, fileName2=None):
     pAC = (dataPAC[:,1] - dataPAC[0,1]) * 0.00037   # AC Pressure = (Pdc - Offset) 0.37 Pa/bit = (Pdc - Offset) 0.00037 kPa/bit
 
     outData = {}
-    outData['t'] = t
     outData['pDC'] = pDC
     outData['tAC'] = tAC
     outData['tDC'] = tDC
     outData['eData'] = eData
-    
-    outData['t2'] = t2
     outData['pAC'] = pAC
+    
+#     outData['t'] = t
+#     outData['t2'] = t2
+    
+    outData['t'] = np.arange(len(pDC))/100
+    outData['t2'] = np.arange(len(pAC))/2200
     
     return outData
 
@@ -181,7 +198,7 @@ def examData(data, tInstance=1.5, tRange=[0, 30], dispTem=False):
 def plotPressureDC(tind, btData, yMax=0, ax=None, ylabelStr="Pressure (kPa)"):
     if ax is None:
         fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
-    ax.plot(btData['t'], btData['pDC'], zorder=10)
+    ax.plot(btData['t'], btData['pDC'], plotMarker, linewidth=plotLinewidth, markersize=plotMarkersize, markeredgewidth=markeredgewidth, zorder=10)
     
 #     pDCUpSample, t2 = signal.resample(btData['pDC'], len(btData['pAC']), t=btData['t'])
 #     ax.plot(t2, pDCUpSample, '--', zorder=11)
@@ -221,7 +238,7 @@ def plotPressureAC(tind, btData, ax=None):
     if ax is None:
         fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
 #     ax.plot(btData['t2'], pACFlip, zorder=10)
-    ax.plot(btData['t2'], pACFlipFilted, zorder=10) # Highpass filtered
+    ax.plot(btData['t2'], pACFlipFilted, plotMarker, linewidth=plotLinewidth, markersize=plotMarkersize, markeredgewidth=markeredgewidth, zorder=10) # Highpass filtered
     
     yMin = np.amin(pACFlip[tind2[0]:tind2[-1]]) - 0.1
     yMax = np.amax(pACFlip[tind2[0]:tind2[-1]]) + 0.1
@@ -290,7 +307,7 @@ def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric"):
     eData = btData['eData']
     eData = eData - np.mean(eData[tind[0]:tind[0]+5,:], axis=0)
     
-#     eData = lowpassSmooth(eData, cutFreqRatio = 0.2, order = 8) # Lowpass filter electrode data 
+    eData = lowpassSmooth(eData, cutFreqRatio = 0.2, order = 8) # Lowpass filter electrode data 
     
     eDataFrames = eData[tind,:]
     rawRange = [np.amin(eDataFrames), np.amax(eDataFrames)]
@@ -303,6 +320,7 @@ def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric"):
     fig1cbar, cbarax = plt.subplots(dpi=300, figsize=(1,1))
 
     if unifyRange=="Raw":
+        cmap = customizeCMap([int(abs(rawRange[0])),int(abs(rawRange[1]))],negaColor="Blues_r",posiColor="Oranges")
         scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=5, cmap=cmap, unifyRange=rawRange)
     elif unifyRange=="Symmetric":
         scplt = btMap.dispRawElectrodeValue(axes, eData[tind,:], s=5, cmap=cmap, unifyRange=symmetricRange)
