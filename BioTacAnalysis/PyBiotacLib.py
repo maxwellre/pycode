@@ -200,9 +200,6 @@ def plotPressureDC(tind, btData, yMax=0, ax=None, ylabelStr="Pressure (kPa)"):
         fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
     ax.plot(btData['t'], btData['pDC'], plotMarker, linewidth=plotLinewidth, markersize=plotMarkersize, markeredgewidth=markeredgewidth, zorder=10)
     
-#     pDCUpSample, t2 = signal.resample(btData['pDC'], len(btData['pAC']), t=btData['t'])
-#     ax.plot(t2, pDCUpSample, '--', zorder=11)
-    
     if yMax <= 0:
         yMax = np.amax(btData['pDC'][tind[0]:tind[-1]]) + 0.1
 
@@ -210,7 +207,7 @@ def plotPressureDC(tind, btData, yMax=0, ax=None, ylabelStr="Pressure (kPa)"):
         ax.plot(btData['t'][[tind[i], tind[i]]], [0, yMax], 'tab:grey', lw=0.5, zorder=0)
 
     ax.set_xlim([btData['t'][tind[0]]-0.1, btData['t'][tind[-1]]+0.1]);
-    ax.set_ylim([-0.1, yMax])
+    ax.set_ylim([-0.1, max(yMax,5)])
     unifyAxesColor(ax, color='k')
 
     ax.set_xlabel("Time (secs)")
@@ -257,36 +254,36 @@ def plotPressureAC(tind, btData, ax=None):
         return fig1, ax
     return None, None
 
-def plotPressureDCPlusAC(tind, btData, ax=None):
-    tind2 = []
-    for ti in tind:
-        tind2.append(nearestTimeFrameInd(btData['t'][ti], btData['t2']))
+# def plotPressureDCPlusAC(tind, btData, ax=None):
+#     tind2 = []
+#     for ti in tind:
+#         tind2.append(nearestTimeFrameInd(btData['t'][ti], btData['t2']))
     
-    ''' Upsample pDA signal based on pAC sampling rate '''
-    pDCUpSample, t2 = signal.resample(btData['pDC'], len(btData['pAC']), t=btData['t'])
+#     ''' Upsample pDA signal based on pAC sampling rate '''
+#     pDCUpSample, t2 = signal.resample(btData['pDC'], len(btData['pAC']), t=btData['t'])
 
-    pDCPlusAC = pDCUpSample+btData['pAC']
-    ''' Plot Signal waveform '''  
-    if ax is None:
-        fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
-    ax.plot(btData['t2'], pDCPlusAC, zorder=10)
+#     pDCPlusAC = pDCUpSample+btData['pAC']
+#     ''' Plot Signal waveform '''  
+#     if ax is None:
+#         fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
+#     ax.plot(btData['t2'], pDCPlusAC, zorder=10)
     
-    yMin = np.amin(pDCPlusAC[tind2[0]:tind2[-1]]) - 0.1
-    yMax = np.amax(pDCPlusAC[tind2[0]:tind2[-1]]) + 0.1
+#     yMin = np.amin(pDCPlusAC[tind2[0]:tind2[-1]]) - 0.1
+#     yMax = np.amax(pDCPlusAC[tind2[0]:tind2[-1]]) + 0.1
     
-    for i in range(len(tind2)):
-        ax.plot(btData['t2'][[tind2[i], tind2[i]]], [yMin, yMax], 'tab:grey', lw=0.5, zorder=0)
+#     for i in range(len(tind2)):
+#         ax.plot(btData['t2'][[tind2[i], tind2[i]]], [yMin, yMax], 'tab:grey', lw=0.5, zorder=0)
         
-    ax.set_xlim([btData['t2'][tind2[0]]-0.1, btData['t2'][tind2[-1]]+0.1]);
-    ax.set_ylim([yMin, yMax])
-    unifyAxesColor(ax, color='k')
+#     ax.set_xlim([btData['t2'][tind2[0]]-0.1, btData['t2'][tind2[-1]]+0.1]);
+#     ax.set_ylim([yMin, yMax])
+#     unifyAxesColor(ax, color='k')
 
-    ax.set_xlabel("Time (secs)")
-    ax.set_ylabel("pDC+pAC (kPa)"); #ax.set_ylabel("Pressure (kPa)");
+#     ax.set_xlabel("Time (secs)")
+#     ax.set_ylabel("pDC+pAC (kPa)"); #ax.set_ylabel("Pressure (kPa)");
     
-    if ax is None:
-        return fig1, ax
-    return None, None
+#     if ax is None:
+#         return fig1, ax
+#     return None, None
 
 ''' -----------------------------------------------------------------------------------------------Plot Raw BioTac Data '''
 def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric"): 
@@ -338,6 +335,35 @@ def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric"):
 #     plotPressureDCPlusAC(tind, btData, ax=ax2[2])
     
     return fig1, fig1cbar, fig2, ax2
+    
+    
+def examElectrodePattern(tind, btData): 
+    btMap = BiotacMap()
+    btMap.initializeDistanceMap()
+    
+    ''' Remove DC of electrode measurement '''
+    eData = btData['eData']
+    eData = eData - np.mean(eData[tind[0]:tind[0]+5,:], axis=0)
+    
+    eData = lowpassSmooth(eData, cutFreqRatio = 0.2, order = 8) # Lowpass filter electrode data 
+    
+    eDataFrames = eData[tind,:]
+    rawRange = [np.amin(eDataFrames), np.amax(eDataFrames)]
+    print("Raw data range = [%.2f, %.2f]" % (rawRange[0], rawRange[1]))
+    
+    frameNum = len(tind)
+    rowNum = int(np.ceil(frameNum/10))
+    
+    ''' Raw impedance values of 19 electrodes '''
+    for row_i in range(rowNum):
+        tind_start = row_i * 10
+        
+        _, axes = plt.subplots(1, 10, dpi=300, figsize=figSize_inch)
+        cmap = customizeCMap([int(abs(rawRange[0])),int(abs(rawRange[1]))],negaColor="Blues_r",posiColor="Oranges")
+        scplt = btMap.dispRawElectrodeValue(axes, eData[tind[tind_start:tind_start+10],:], s=5, cmap=cmap, unifyRange=rawRange)
+        axes[0].set_title("Index %d - %d" % (tind[tind_start],tind[:tind_start+10][-1]), fontdict={'fontsize':2})
+        plt.show()
+    
     
 def generateMapResult(tind, btData, yMax=5, unifyRange=None, alpha=4000, reverseColorbar=False):    
 # cmap=cm.get_cmap('inferno', 100) # cmap=cm.get_cmap('binary', 100) # cmap=cm.get_cmap('RdYlBu', 100)
