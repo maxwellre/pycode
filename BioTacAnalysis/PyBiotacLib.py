@@ -337,7 +337,7 @@ def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric"):
     return fig1, fig1cbar, fig2, ax2
     
     
-def examElectrodePattern(tind, btData): 
+def examElectrodePattern(tind, btData, oneRange=False): 
     btMap = BiotacMap()
     btMap.initializeDistanceMap()
     
@@ -347,8 +347,10 @@ def examElectrodePattern(tind, btData):
     
     eData = lowpassSmooth(eData, cutFreqRatio = 0.2, order = 8) # Lowpass filter electrode data 
     
-    eDataFrames = eData[tind,:]
-    rawRange = [np.amin(eDataFrames), np.amax(eDataFrames)]
+    if oneRange:
+        rawRange = [np.amin(eData), np.amax(eData)]
+    else:
+        rawRange = [np.amin(eData[tind,:]), np.amax(eData[tind,:])]
     print("Raw data range = [%.2f, %.2f]" % (rawRange[0], rawRange[1]))
     
     frameNum = len(tind)

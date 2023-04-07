@@ -19,8 +19,8 @@ LIGHT_YELLOW = [0.5,0.5,-0.5]
 DARK_YELLOW = [-0.5,-0.5,-1.0]
 LIGHT_BLUE = [-0.5,-0.5,0.5]
 DARK_BLUE = [-1.0,-1.0,-0.5]
-LIGHT_PINK = [0.0,-0.5,0.5]
-DARK_PINK = [-0.5,-1.0,-0.5]
+LIGHT_PINK = [0.5,-0.5,0.5]
+DARK_PINK = [0.0,-1.0,-0.5]
 
 '''Configuration'''
 HOST = '192.168.4.1'  # The server's hostname or IP address
@@ -54,12 +54,12 @@ button2Text = visual.TextStim(window0, pos=button2.pos, text='Rep. Measure', hei
 
 button3 = visual.Rect(window0, pos=[0.1, 0.1], width=0.2, height=0.1, fillColor=LIGHT_PINK,
                       lineWidth=1, lineColor='white')
-button3Text = visual.TextStim(window0, pos=button3.pos, text='Vibrate', height=0.05) # -------------------------- 'Pink'
+button3Text = visual.TextStim(window0, pos=button3.pos, text='Pulse', height=0.05) # -------------------------- 'Pink'
 
 
 button4 = visual.Rect(window0, pos=[0.35, 0.1], width=0.2, height=0.1, fillColor=LIGHT_BLUE,
                       lineWidth=1, lineColor='white')
-button4Text = visual.TextStim(window0, pos=button4.pos, text='?', height=0.05) # -------------------------------- 'Blue'
+button4Text = visual.TextStim(window0, pos=button4.pos, text='Sine', height=0.05) # ------------------------------ 'Blue'
 
 
 ''' Button (Set) '''
@@ -99,11 +99,11 @@ def refreshWindow():
     button1.draw()
     button2.draw()
     button3.draw()
-    # button4.draw()
+    button4.draw()
     button1Text.draw()
     button2Text.draw()
     button3Text.draw()
-    # button4Text.draw()
+    button4Text.draw()
 
     slider1.draw()
     slider2.draw()
@@ -181,15 +181,15 @@ if __name__ == '__main__':
         refreshWindow()
 
         if mouse0.isPressedIn(button1, buttons=[0]): # --------------------------------------- "Green"
-
-            trialNum = slider4.getRating()
-
-            for i in range(trialNum): # Repeat measurement for *** trials
-                t0 = time.time()
-                button1.setFillColor(DARK_GREEN)
-                command(sock0, 'l', light1)
-                while(time.time() - t0 < 3.9): # Wait for 4 seconds until next trial
-                    time.sleep(0.1)
+            button1.setFillColor(DARK_GREEN)
+            command(sock0, 'l', light1)
+            # trialNum = slider4.getRating()
+            # for i in range(trialNum): # Repeat measurement for *** trials
+            #     t0 = time.time()
+            #     button1.setFillColor(DARK_GREEN)
+            #     command(sock0, 'l', light1)
+            #     while(time.time() - t0 < 3.9): # Wait for 4 seconds until next trial
+            #         time.sleep(0.1)
         else:
             button1.setFillColor(LIGHT_GREEN)
 
@@ -201,7 +201,7 @@ if __name__ == '__main__':
             for i in range(trialNum):  # Repeat measurement for *** trials
                 t0 = time.time()
                 button2.setFillColor(DARK_YELLOW)
-                command(sock0, 'x', light1)
+                command(sock0, 'w', light1)
                 while (time.time() - t0 < 3.9):  # Wait for 4 seconds until next trial
                     time.sleep(0.1)
         else:
@@ -217,7 +217,7 @@ if __name__ == '__main__':
 
         if mouse0.isPressedIn(button4, buttons=[0]):  # --------------------------------------- "Blue"
             button4.setFillColor(DARK_BLUE)
-            # command(sock0, 'x', light1)
+            command(sock0, 'x', light1)
         else:
             button4.setFillColor(LIGHT_BLUE)
 

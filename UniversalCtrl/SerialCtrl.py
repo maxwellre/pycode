@@ -25,32 +25,40 @@ amplitudeCap = 1.01 # Cap of the output amplitude to prevent excessively loud so
 octaveFrequencies = [5.010e+01, 6.310e+01, 7.940e+01,
                      1.000e+02, 1.259e+02, 1.585e+02, 1.995e+02, 2.512e+02, 3.162e+02, 3.981e+02,
                      5.012e+02, 6.310e+02, 7.943e+02] # 50Hz to 794Hz (exclude 1000Hz)
-segmentGain = [0.0235, 0.012, 0.01370403, 0.03, 0.05052622, 0.06882767,
-0.112,  0.11949221, 0.15370989, 0.19613606, 0.25,       0.31842742,
-0.41088783]
+
+segmentGain = [0.025, 0.015, 0.015, 0.045, 0.029, 0.03882767,
+0.072,  0.10, 0.15370989, 0.19613606, 0.25,       0.31842742,
+0.36088783] #05/04/2023
+
+# segmentGain = [0.0235, 0.012, 0.01370403, 0.03, 0.05052622, 0.06882767,
+# 0.112,  0.11949221, 0.15370989, 0.19613606, 0.25,       0.31842742,
+# 0.41088783]
+
+# segmentGain = [0.025, 0.015, 0.015, 0.035, 0.059, 0.09882767,
+# 0.12,  0.10, 0.15370989, 0.19613606, 0.25,       0.31842742,
+# 0.36088783]
 
 ''' Constructing audio signal to drive the voice coil actuator '''
 pauseSegment = np.zeros(shape=(1, int(AudioFs * segmentInterval)))
 outputSignal = pauseSegment
-# outputSignal = np.empty(1)
 
-# Insert the starting pulse at the beginning ------------------ begnining pulse
-y, _ = sinSignal(sinFreq=100, sinDuration=0.1, Fs=AudioFs)
+# for n in range(2):
+for i in range(len(octaveFrequencies)):
+    y, _ = sinSignal(sinFreq=octaveFrequencies[i], sinDuration=segmentTime, Fs=AudioFs)
+
+    window = signal.windows.tukey(y.shape[0], alpha=0.2);
+    y = np.multiply(y, window)
+    y = y * segmentGain[i]
+
+    outputSignal = np.append(outputSignal, y)
+    outputSignal = np.append(outputSignal, pauseSegment)
+
+# Insert the pulse at the end ------------------ end pulse
+y, _ = sinSignal(sinFreq=800, sinDuration=0.02, Fs=AudioFs)
 window = signal.windows.tukey(y.shape[0], alpha=1);
 y = np.multiply(y, window)
 outputSignal = np.append(outputSignal, y)
 outputSignal = np.append(outputSignal, pauseSegment)
-
-for n in range(2):
-    for i in range(len(octaveFrequencies)):
-        y, _ = sinSignal(sinFreq=octaveFrequencies[i], sinDuration=segmentTime, Fs=AudioFs)
-
-        window = signal.windows.tukey(y.shape[0], alpha=0.2);
-        y = np.multiply(y, window)
-        y = y * segmentGain[i]
-
-        outputSignal = np.append(outputSignal, y)
-        outputSignal = np.append(outputSignal, pauseSegment)
 
 # Limit output votlage (sound level) for device safety
 outputSignal[outputSignal > amplitudeCap] = amplitudeCap
