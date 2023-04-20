@@ -54,7 +54,7 @@ def customizeCMap(cRange=[100,100],negaColor="GnBu_r",posiColor="OrRd"):
 def aPlot(figName='', is3D = False, dpi=72):
     ax = []
     
-    fig1 = plt.figure(figsize = (6,3), dpi=dpi)
+    fig1 = plt.figure(figsize = (12,6), dpi=dpi)
     
     fig1.suptitle(figName, fontsize=16)
     if(is3D):
@@ -64,6 +64,42 @@ def aPlot(figName='', is3D = False, dpi=72):
         
     return ax, fig1
 
+def onsetSegmentation(datain, segIntervalSamp, cutFreqRatio=0, disp=False, threshold=0.6):
+    if(cutFreqRatio > 0):
+        smoothSig = lowpassSmooth(abs(datain), cutFreqRatio=cutFreqRatio)
+    
+    smoothSig = smoothSig - smoothSig[0]
+    
+    samp = np.arange(len(datain))
+    
+    maxValue = np.sqrt(np.mean(np.square(smoothSig)))
+    
+    segPointInd = np.squeeze(np.argwhere(smoothSig > threshold * maxValue)) # Find value larger than 25% of peak as valid segment data point
+    segGapInd = np.squeeze(np.argwhere(np.diff(segPointInd) > segIntervalSamp))# Index of point where gap is longer than the predetermined interval
+
+    startInd = np.array(segPointInd[segGapInd+1])
+    startInd = np.insert(startInd, 0, segPointInd[0])
+
+    endInd = np.array(segPointInd[segGapInd])
+    endInd = np.append(endInd, segPointInd[-1])
+    
+    if disp:
+        ax0, _ = aPlot(); 
+        ax0.plot(samp, datain, color='tab:grey'); 
+        axb = ax0.twinx() 
+        axb.plot(samp, smoothSig, color='tab:blue')
+        axb.plot(segPointInd, np.ones(segPointInd.shape)*threshold *maxValue, '.', color='tab:orange')
+        axb.plot(startInd, np.ones(startInd.shape)*maxValue, '*r')
+        axb.plot(endInd, np.ones(endInd.shape)*maxValue, '*c')
+        plt.show();
+        
+    return zip(startInd, endInd)
+
+''' Filtering '''
+def movAvgSmooth(datain, winLen=100):
+    dataout = np.convolve(datain, np.ones(winLen)/winLen, mode='same')
+    return dataout
+
 def lowpassSmooth(datain, cutFreqRatio = 0.05, order = 8):
     if (cutFreqRatio > 0) and (cutFreqRatio < 0.5):
         b, a = signal.butter(order, 2 * cutFreqRatio, btype='low')
@@ -72,6 +108,12 @@ def lowpassSmooth(datain, cutFreqRatio = 0.05, order = 8):
     else:
         print("Incorrect cutFreqRatio outside of (0, 0.5)")
 
+def highpassFilter(datain, cutFreqRatio = 0.05, order = 8):
+    b, a = signal.butter(order, 2 * cutFreqRatio, btype='highpass')
+    dataout = signal.filtfilt(b, a, datain, axis=0)
+    return dataout
+
+''' Info and Display '''
 def unifyAxesColor(ax, color='k'):
     ax.spines['top'].set_color(color)
     ax.spines['left'].set_color(color)
@@ -121,16 +163,7 @@ def sample2Time(ax, Fs): # Covert the xticks of current plot from samples to tim
     ax.set_xlim(0, locs[-1])
     ax.set_xlabel('Time (secs)')
 
-def lowpassSmooth(datain, cutFreqRatio = 0.05, order = 8):
-    b, a = signal.butter(order, 2 * cutFreqRatio, btype='low')
-    dataout = signal.filtfilt(b, a, datain, axis=0)
-    return dataout
-
-def highpassFilter(datain, cutFreqRatio = 0.05, order = 8):
-    b, a = signal.butter(order, 2 * cutFreqRatio, btype='highpass')
-    dataout = signal.filtfilt(b, a, datain, axis=0)
-    return dataout
-
+''' BioTac Finger '''
 def loadRawBioTac(measureDataPath, fileName, root=None, fileName2=None):
     if fileName2 is None:
         nameLabel = decodeData(fileName, ".*.btd", isString=True)
@@ -194,7 +227,54 @@ def examData(data, tInstance=1.5, tRange=[0, 30], dispTem=False):
         ax.plot(data['t'], eData[:,i])
     ax.set_xlim(tRange)
     ax.plot(data['t'][[ti, ti]], [-0.1, 0.1], 'k')
+
+# ------------------------------------------------------------------ Data Segmentation    
+def segmentData(data, threshold=0.6, disp=False):
+    segIndPair = onsetSegmentation(data['pDC'], 200, cutFreqRatio=0.1, disp=disp, threshold=threshold)
     
+    if disp:
+        _, ax = plt.subplots(dpi=300, figsize=(3,2))
+        for i0,i1 in segIndPair:
+            t = data['t'][i0:i1]
+            t = t-t[0]
+            ax.plot(t, data['pDC'][i0:i1])
+        
+    return segIndPair
+    
+# ------------------------------------------------------------------ Data Stats
+def dataStats(data, segIndPair, Fs=100):
+    peakDC = []
+    triseDC = []
+    for i0,i1 in segIndPair:
+        aSignal = data['pDC'][i0:i1]
+        
+        smData = lowpassSmooth(aSignal)
+        smData = signal.detrend(smData, type='linear')
+
+        maxValue = np.max(smData)
+        onsetInd = np.argwhere(smData > 0.10 * maxValue)[0] # When signal reach 10% of its peak (onset)
+        PTopInd = np.argwhere(smData > 0.90 * maxValue)[0] # When signal reach 90% of its peak
+        
+        ''' To Find the steady state pressure '''
+#         offInd = np.argwhere(smData[50:] > 0.20 * maxValue)[-1][0]+50
+#         if(offInd == None or offInd < PTopInd):
+#             offInd = smData.shape[0]
+
+#         leftInd = PTopInd
+#         RightInd = offInd
+#         while(leftInd < RightInd and abs(smData[leftInd] - smData[RightInd]) > (0.05*maxValue)):
+#             leftInd = leftInd+1
+#             RightInd = RightInd-1
+        
+        rawPeakValue = np.max(aSignal)
+
+        riseTime = (PTopInd - onsetInd)/Fs
+        
+        peakDC.append(rawPeakValue)
+        triseDC.append(riseTime)
+        
+    return peakDC, triseDC
+
 def plotPressureDC(tind, btData, yMax=0, ax=None, ylabelStr="Pressure (kPa)"):
     if ax is None:
         fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
