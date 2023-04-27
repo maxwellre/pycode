@@ -43,6 +43,17 @@ pltRed = (220/255,95/255,87/255)
 
 pltLightGrey = (240/255,240/255,240/255)
 
+
+biotacFs = {
+  "Pac": 2200,
+  "Pdc": 100,
+} # The sampling frequency of BioTac depends on data type. 
+
+biotacUnit = {
+  "Pac": 0.00037,
+  "Pdc": 0.0365,
+} # The unit conversion of BioTac depends on data type. Pac: 0.00037kPa/bit, Pdc:  0.0365kPa/bit
+
 def customizeCMap(cRange=[100,100],negaColor="GnBu_r",posiColor="OrRd"):
     cmap1 = cm.get_cmap(negaColor, 1000)
     cmap2 = cm.get_cmap(posiColor, 1000)
@@ -91,9 +102,8 @@ def onsetSegmentation(datain, segIntervalSamp, cutFreqRatio=0, disp=False, thres
         axb.plot(segPointInd, np.ones(segPointInd.shape)*threshold *maxValue, '.', color='tab:orange')
         axb.plot(startInd, np.ones(startInd.shape)*maxValue, '*r')
         axb.plot(endInd, np.ones(endInd.shape)*maxValue, '*c')
-        plt.show();
         
-    return zip(startInd, endInd)
+    return startInd, endInd
 
 ''' Filtering '''
 def movAvgSmooth(datain, winLen=100):
@@ -229,26 +239,47 @@ def examData(data, tInstance=1.5, tRange=[0, 30], dispTem=False):
     ax.plot(data['t'][[ti, ti]], [-0.1, 0.1], 'k')
 
 # ------------------------------------------------------------------ Data Segmentation    
-def segmentData(data, threshold=0.6, disp=False):
-    segIndPair = onsetSegmentation(data['pDC'], 200, cutFreqRatio=0.1, disp=disp, threshold=threshold)
+def segmentData(data, minInterval=100, threshold=0.6, disp=False, title="", validStartInd=0):
+    startInd, endInd = onsetSegmentation(data['pDC'][validStartInd:], minInterval, cutFreqRatio=0.1, disp=disp, threshold=threshold)
+    
+    startInd = startInd + validStartInd
+    endInd = endInd + validStartInd
     
     if disp:
-        _, ax = plt.subplots(dpi=300, figsize=(3,2))
-        for i0,i1 in segIndPair:
+        fig_local, ax_local = plt.subplots(dpi=300, figsize=(3,2))
+        fig_local.suptitle(title)
+        for i0,i1 in zip(startInd, endInd):
             t = data['t'][i0:i1]
             t = t-t[0]
-            ax.plot(t, data['pDC'][i0:i1])
-        
-    return segIndPair
+            ax_local.plot(t, data['pDC'][i0:i1])
+    
+    return startInd, endInd
     
 # ------------------------------------------------------------------ Data Stats
-def dataStats(data, segIndPair, Fs=100):
+def getDuration(dataIn, peakInd, lowerThreshold):
+    leftInd = peakInd
+    while(leftInd > 0 and dataIn[leftInd] > lowerThreshold):
+        leftInd = leftInd-1
+        
+    dataLen = len(dataIn)
+    rightInd = peakInd
+    while(rightInd < dataLen-1 and dataIn[rightInd] > lowerThreshold):
+        rightInd = rightInd+1
+        
+    return leftInd, rightInd
+
+def dataStats(data, startInd, endInd, Fs=100):
     peakDC = []
     triseDC = []
-    for i0,i1 in segIndPair:
+    tDuration = []
+    
+#     ax1,_ = aPlot()
+
+    for i0,i1 in zip(startInd, endInd):
         aSignal = data['pDC'][i0:i1]
-        
-        smData = lowpassSmooth(aSignal)
+
+#         smData = lowpassSmooth(aSignal)
+        smData = aSignal
         smData = signal.detrend(smData, type='linear')
 
         maxValue = np.max(smData)
@@ -270,10 +301,22 @@ def dataStats(data, segIndPair, Fs=100):
 
         riseTime = (PTopInd - onsetInd)/Fs
         
+        leftInd, rightInd = getDuration(data['pDC'], np.argmax(aSignal)+i0, rawPeakValue*0.2)  
+        tDur = (rightInd - leftInd) / Fs
+        
         peakDC.append(rawPeakValue)
         triseDC.append(riseTime)
-        
-    return peakDC, triseDC
+        tDuration.append(tDur)
+       
+#         ax1.plot(data['t'][i0:i1], aSignal, 'k')        #         ax1.plot(aSignal[:,0], smData, 'g')
+#         ax1.plot([data['t'][leftInd], data['t'][leftInd]], [0, rawPeakValue], '-r')
+#         ax1.plot([data['t'][rightInd], data['t'][rightInd]], [0, rawPeakValue], '-r')
+#         ax1.set_xlabel("peak=%.1fkPa - TDuration=%.3fs - riseT=%.3fs" % (rawPeakValue,tDur, riseTime))
+
+    peakDC = np.array(peakDC)
+    triseDC = np.array(triseDC)
+    tDuration = np.array(tDuration)
+    return peakDC, triseDC, tDuration
 
 def plotPressureDC(tind, btData, yMax=0, ax=None, ylabelStr="Pressure (kPa)"):
     if ax is None:
@@ -425,7 +468,7 @@ def examElectrodePattern(tind, btData, oneRange=False):
     eData = btData['eData']
     eData = eData - np.mean(eData[tind[0]:tind[0]+5,:], axis=0)
     
-    eData = lowpassSmooth(eData, cutFreqRatio = 0.2, order = 8) # Lowpass filter electrode data 
+#     eData = lowpassSmooth(eData, cutFreqRatio = 0.2, order = 8) # Lowpass filter electrode data 
     
     if oneRange:
         rawRange = [np.amin(eData), np.amax(eData)]
