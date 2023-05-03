@@ -322,16 +322,16 @@ def nearestTimeFrameInd(t1_i, t2):
     ind = np.argmin(abs(t2 - t1_i))
     return ind
 
-def plotPressureDC(tind, btData, yMax=0, ax=None, ylabelStr="Pressure (kPa)"):
+def plotPressureDC(tind, btData, yMax=0, ax=None, ylabelStr="Pressure (kPa)", color='tab:grey'):
     if ax is None:
         fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
-    ax.plot(btData['t'], btData['pDC'], plotMarker, linewidth=plotLinewidth, markersize=plotMarkersize, markeredgewidth=markeredgewidth, zorder=10)
+    ax.plot(btData['t'], btData['pDC'], color=color, zorder=10) # , plotMarker, linewidth=plotLinewidth, markersize=plotMarkersize, markeredgewidth=markeredgewidth,
     
     if yMax <= 0:
         yMax = np.amax(btData['pDC'][tind[0]:tind[-1]]) + 0.1
 
     for i in range(len(tind)):
-        ax.plot(btData['t'][[tind[i], tind[i]]], [0, yMax], 'tab:grey', lw=0.5, zorder=0)
+        ax.plot(btData['t'][[tind[i], tind[i]]], [0, yMax], color='tab:grey', lw=0.5, zorder=0)
 
     ax.set_xlim([btData['t'][tind[0]]-0.1, btData['t'][tind[-1]]+0.1]);
     ax.set_ylim([-0.1, max(yMax,5)])
@@ -344,7 +344,7 @@ def plotPressureDC(tind, btData, yMax=0, ax=None, ylabelStr="Pressure (kPa)"):
         return fig1, ax
     return None, None
    
-def plotPressureAC(tind, btData, ax=None):
+def plotPressureAC(tind, btData, ax=None, yRange=None, color='tab:grey'):
     tind2 = []
     for ti in tind:
         tind2.append(nearestTimeFrameInd(btData['t'][ti], btData['t2']))
@@ -357,17 +357,20 @@ def plotPressureAC(tind, btData, ax=None):
     ''' Plot Signal waveform '''  
     if ax is None:
         fig1, ax = plt.subplots(dpi=300, figsize=(3,1))
-#     ax.plot(btData['t2'], pACFlip, zorder=10)
-    ax.plot(btData['t2'], pACFlipFilted, plotMarker, linewidth=plotLinewidth, markersize=plotMarkersize, markeredgewidth=markeredgewidth, zorder=10) # Highpass filtered
+
+#     ax.plot(t2, pACFlipFilted, plotMarker, linewidth=plotLinewidth, markersize=plotMarkersize, markeredgewidth=markeredgewidth, zorder=10) # Highpass filtered              #     ax.plot(btData['t2'], pACFlip, zorder=10)
+    ax.plot(btData['t2'], pACFlipFilted, color=color, zorder=10)
     
     yMin = np.amin(pACFlip[tind2[0]:tind2[-1]]) - 0.1
     yMax = np.amax(pACFlip[tind2[0]:tind2[-1]]) + 0.1
+    if yRange is None:
+        yRange = [yMin,yMax]
     
-    for i in range(len(tind2)):
-        ax.plot(btData['t2'][[tind2[i], tind2[i]]], [yMin, yMax], 'tab:grey', lw=0.5, zorder=0)
+#     for i in range(len(tind2)):
+#         ax.plot(btData['t2'][[tind2[i], tind2[i]]], [yMin, yMax], 'tab:grey', lw=0.5, zorder=0)
         
     ax.set_xlim([btData['t2'][tind2[0]]-0.1, btData['t2'][tind2[-1]]+0.1]);
-    ax.set_ylim([yMin, yMax])
+    ax.set_ylim(yRange)
     unifyAxesColor(ax, color='k')
 
     ax.set_xlabel("Time (secs)")
@@ -409,7 +412,7 @@ def plotPressureAC(tind, btData, ax=None):
 #     return None, None
 
 ''' -----------------------------------------------------------------------------------------------Plot Raw BioTac Data '''
-def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric"): 
+def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric", yRange=None, color='tab:grey'): 
 #     cmap=cm.get_cmap("viridis", 100)
 #     cmap=cm.get_cmap("vlag", 100)
 #     cmap=cm.get_cmap("coolwarm", 100)
@@ -455,13 +458,11 @@ def plotElectrodeRawData(tind, btData, yMax=0, unifyRange="Symmetric"):
     cbar.ax.get_yaxis().labelpad = 15
     
     ''' Plot Signal waveform '''  
-    fig2, ax2 = plt.subplots(2, 1, dpi=300, figsize=(figSize_inch[0], figSize_inch[1]))
-    plotPressureDC(tind, btData, yMax=yMax, ax=ax2[0], ylabelStr="");
-    plotPressureAC(tind, btData, ax=ax2[1]);
-#     plotPressureDCPlusAC(tind, btData, ax=ax2[2])
+    fig2, ax2 = plt.subplots(2, 1, dpi=300, figsize=(figSize_inch[0], figSize_inch[1]/2), gridspec_kw={'height_ratios': [2, 1]})
+    plotPressureDC(tind, btData, yMax=yMax, ax=ax2[0], ylabelStr="", color=color);
+    plotPressureAC(tind, btData, ax=ax2[1], yRange=yRange, color=color);
     
     return fig1, fig1cbar, fig2, ax2
-    
     
 def examElectrodePattern(tind, btData, oneRange=False): 
     btMap = BiotacMap()
