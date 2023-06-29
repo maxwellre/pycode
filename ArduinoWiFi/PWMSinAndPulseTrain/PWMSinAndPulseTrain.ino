@@ -21,7 +21,7 @@
 #define MAX_CLIENT_NUM 2 // Must not change: Allow only one VR headset and one PC connected
 //#define MAX_LINE_LEN * // ALlow maxium * bytes of data streamed per line
 
-char ssid[] = "HVCtrl";        // your network SSID (name)
+char ssid[] = "HVCtrl2";        // your network SSID (name)
 char pass[] = "1234";    // your network password (use for WPA, or use as key for WEP)
 
 bool isVRReady = false;
@@ -331,6 +331,14 @@ void loop() {
           if(msgValue.substring(14,16) == "Ti") {
             vibTime = msgValue.substring(17,21).toInt();
           }
+
+          if(msgValue.substring(7,9) == "Ch") {
+            chargeDuration = msgValue.substring(10,14).toInt();
+          }
+
+          if(msgValue.substring(15,17) == "Di") {
+            dischargeDuration = msgValue.substring(18,22).toInt();
+          }
       
           /* Safety check */
           if ((chargeDuration > 4000) || (chargeDuration < 0)) {
@@ -388,7 +396,7 @@ void loop() {
             clients[VRInd]->println("command-received"); // Acknowledgement
           } /* ---------------- Botton 8 ---------------- */
 
-          else if (msg == 'd') { // ------------- Data streaming         
+          else if (msg == 'd') { // ------------- Data streaming (OBSOLETED: kept for compatibility purpose)        
             delay(100);
             if(DEBUG_MOD){Serial.println("Data Saved");}  
             delay(400);
